@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<!-- BUILD: v10-clean — SEM contador, convite fixo com renovação manual -->
 <title>Relay Chat</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -14,7 +15,6 @@
   input, textarea, select { font: inherit; background: #1c1c1f; color: #e6e6e8; border: 1px solid #333; border-radius: 6px; padding: 8px 10px; width: 100%; outline: none; }
   input:focus, textarea:focus, select:focus { border-color: #5865f2; }
   input:disabled, textarea:disabled { opacity: 0.6; cursor: not-allowed; }
-  input[readonly] { background: #141415; color: #8eb4ff; font-family: ui-monospace, monospace; }
   input[type=color] { padding: 2px; height: 34px; cursor: pointer; }
   button.primary { background: #5865f2; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; }
   button.primary:hover:not(:disabled) { background: #4752c4; }
@@ -48,16 +48,11 @@
   .sidebar { background: #17181b; border-right: 1px solid #2a2a2e; display: flex; flex-direction: column; min-height: 0; }
   .sidebar-header { padding: 16px; border-bottom: 1px solid #2a2a2e; }
   .sidebar-header h2 { margin: 0 0 8px; font-size: 16px; word-break: break-word; }
-  .room-code {
-    display: flex; align-items: center; gap: 6px;
-    background: #0f0f10; border: 1px solid #2a2a2e;
-    border-radius: 6px; padding: 6px 8px;
-    font-family: ui-monospace, monospace; font-size: 12px;
-  }
+  .room-code { display: flex; align-items: center; gap: 6px; background: #0f0f10; border: 1px solid #2a2a2e; border-radius: 6px; padding: 6px 8px; font-family: ui-monospace, monospace; font-size: 12px; }
   .room-code span.code { flex: 1; color: #5865f2; font-weight: 600; letter-spacing: 0.5px; word-break: break-all; }
   .room-code span.code.hidden { color: #666; font-weight: 400; letter-spacing: 0; font-family: system-ui, sans-serif; font-style: italic; }
-  .invite-meta { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 11px; }
-  .invite-meta button { flex: 1; padding: 4px 8px; font-size: 11px; }
+  .invite-meta { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+  .invite-meta button { flex: 1; padding: 5px 8px; font-size: 11px; }
   .users-section { padding: 16px; flex: 1; overflow-y: auto; min-height: 0; }
   .users-section h3 { margin: 0 0 10px; font-size: 11px; text-transform: uppercase; color: #888; letter-spacing: 0.5px; display: flex; justify-content: space-between; }
   .users-section h3 .count-info { color: #4ade80; font-weight: 700; }
@@ -387,7 +382,7 @@
 
 <script>
 /* ============================================================
-   RELAY CHAT v9 — código de convite fixo com renovação manual
+   RELAY CHAT v10 — convite FIXO (renovação manual, sem timer)
    ============================================================ */
 
 const $ = (id) => document.getElementById(id);
@@ -678,7 +673,7 @@ function beep(freq = 880, dur = 0.08, vol = 0.05) {
 }
 
 /* ============================================================
-   SETUP
+   SETUP SCREEN
    ============================================================ */
 function showScreen(name) {
   $('setup').style.display = name === 'setup' ? 'flex' : 'none';
@@ -724,7 +719,7 @@ $('joinBtn').onclick = async () => {
 };
 
 /* ============================================================
-   HOST
+   HOST — criação e conexões
    ============================================================ */
 async function createRoom(name, code) {
   const peerId = 'relaychat-' + code;
@@ -757,6 +752,7 @@ function onHostNewConnection(conn) {
     const inviteToken = String(meta.inviteToken || '').toUpperCase().trim();
     const resumeToken = String(meta.resumeToken || '');
 
+    /* 1) Ban */
     const banned = deviceId ? S._bans.find(b => b.deviceId === deviceId) : null;
     if (banned) {
       conn.send({ type: 'ban-rejected', reason: banned.reason || 'Você foi banido desta sala.' });
@@ -764,6 +760,7 @@ function onHostNewConnection(conn) {
       return;
     }
 
+    /* 2) Auth: resumeToken OU inviteToken exato */
     const resumeData = resumeToken ? S._resumeTokens.get(resumeToken) : null;
     const isResume = !!(resumeData && resumeData.deviceId === deviceId);
     const isInvite = !!(inviteToken && isValidInviteToken(inviteToken));
@@ -773,9 +770,11 @@ function onHostNewConnection(conn) {
       return;
     }
 
+    /* 3) Detectar membro existente (online ou offline) */
     const existing = findUserByDevice(deviceId);
     const isReconnect = !!existing;
 
+    /* 4) Capacidade — só bloqueia membro NOVO */
     if (!existing) {
       if (countTotalMembers() >= MAX_FRIENDS) {
         conn.send({ type: 'error', message: 'Sala cheia (' + MAX_FRIENDS + ' membros já registrados).' });
@@ -784,6 +783,7 @@ function onHostNewConnection(conn) {
       }
     }
 
+    /* 5) Se reconectou, fecha conn antiga */
     let prevMuted = false, prevRole = 'user', prevPerms = {}, prevName = '';
     if (existing) {
       prevMuted = !!existing.user.muted;
@@ -805,12 +805,10 @@ function onHostNewConnection(conn) {
       persistPending();
     }
 
+    /* 6) Resolver identidade */
     let name, role = 'user', perms = {}, muted = false;
     if (isReconnect) {
-      name = prevName;
-      role = prevRole;
-      perms = prevPerms;
-      muted = prevMuted;
+      name = prevName; role = prevRole; perms = prevPerms; muted = prevMuted;
     } else if (isResume) {
       name = resumeData.name || rawName || 'Anônimo';
       role = resumeData.role || 'user';
@@ -823,16 +821,14 @@ function onHostNewConnection(conn) {
     }
 
     if (!isReconnect) {
-      const otherNames = [...S.users.values()].map(u => u.name);
-      name = uniqueName(name, otherNames);
+      name = uniqueName(name, [...S.users.values()].map(u => u.name));
     }
 
+    /* 7) Registra online */
     S.conns.set(conn.peer, conn);
-    S.users.set(conn.peer, {
-      id: conn.peer, name, role, perms, deviceId, muted,
-      online: true, lastSeen: Date.now()
-    });
+    S.users.set(conn.peer, { id: conn.peer, name, role, perms, deviceId, muted, online: true, lastSeen: Date.now() });
 
+    /* 8) Rotaciona resumeToken deste device */
     for (const [tok, data] of [...S._resumeTokens]) {
       if (data.deviceId === deviceId) S._resumeTokens.delete(tok);
     }
@@ -840,6 +836,7 @@ function onHostNewConnection(conn) {
     S._resumeTokens.set(newResumeToken, { deviceId, name, role, perms, muted });
     persistRoom();
 
+    /* 9) Welcome */
     conn.send({ type: 'welcome', state: serializeState(conn.peer), resumeToken: newResumeToken });
     broadcastAll({ type: 'users-update', users: [...S.users.values()] });
     addSystemMessageHost(`${name} ${isReconnect ? 'voltou' : 'entrou'}${role === 'admin' ? ' (admin)' : ''}${muted ? ' (silenciado)' : ''}.`);
@@ -936,6 +933,7 @@ function sendError(peerId, message) {
   const conn = S.conns.get(peerId);
   if (conn) try { conn.send({ type: 'error', message }); } catch {}
 }
+
 function hostOnDisconnect(peerId) {
   const user = S.users.get(peerId); if (!user) return;
   S.conns.delete(peerId); S._rateLimit.delete(peerId);
@@ -967,7 +965,7 @@ function hostHandleTyping(peerId) {
 }
 
 /* ============================================================
-   CLIENT
+   CLIENT — entrar na sala
    ============================================================ */
 function joinRoom(code, name, opts = {}) {
   const peer = new Peer();
@@ -1036,7 +1034,6 @@ function userOnData(data) {
     case 'welcome': return;
     case 'users-update':
       S.users = new Map(data.users.map(u => [u.id, u]));
-      /* Limpa invite token se perdeu permissão */
       if (!canSeeInvite(me())) S._inviteToken = '';
       renderUsers(); applyMyPermissions(); return;
     case 'chat':
@@ -1071,14 +1068,12 @@ function userOnData(data) {
     case 'typing': return showTyping(data.peerId, data.name);
     case 'ban-rejected':
       alert('🚫 Você foi banido desta sala.\n\nMotivo: ' + (data.reason || '—'));
-      deleteKV('lastRoom');
-      location.hash = '';
+      deleteKV('lastRoom'); location.hash = '';
       setTimeout(() => location.reload(), 200);
       return;
     case 'auth-rejected':
       alert('❌ Não foi possível entrar.\n\n' + (data.reason || 'Código inválido.'));
-      deleteKV('lastRoom');
-      location.hash = '';
+      deleteKV('lastRoom'); location.hash = '';
       setTimeout(() => location.reload(), 200);
       return;
     case 'kick':
@@ -1193,7 +1188,7 @@ function renderTypingLine() {
 }
 
 /* ============================================================
-   CÓDIGO DE CONVITE (persistente, renovação manual)
+   CONVITE — exibição e renovação MANUAL (sem timer)
    ============================================================ */
 function updateInviteDisplay() {
   const display = $('roomCodeDisplay');
@@ -1212,6 +1207,14 @@ function updateInviteDisplay() {
   meta.style.display = 'flex';
   display.textContent = getCurrentInviteCode();
 }
+
+function updateSettingsInviteDisplay() {
+  const codeEl = $('inviteCodeDisplay');
+  if (!codeEl) return;
+  if (!hasPerm('shareInvite')) { codeEl.textContent = '🔒 oculto'; return; }
+  codeEl.textContent = getCurrentInviteCode();
+}
+
 $('copyCodeBtn').onclick = () => {
   if (!hasPerm('shareInvite')) return;
   safeCopy(getCurrentInviteCode());
@@ -1219,14 +1222,12 @@ $('copyCodeBtn').onclick = () => {
 };
 $('copyInviteLinkBtn').onclick = () => {
   if (!hasPerm('shareInvite')) return;
-  const code = getCurrentInviteCode();
-  safeCopy(location.origin + location.pathname + '#' + code);
+  safeCopy(location.origin + location.pathname + '#' + getCurrentInviteCode());
   const b = $('copyInviteLinkBtn'); b.textContent = '✓ copiado'; setTimeout(() => b.textContent = '🔗 Copiar link de convite', 1500);
 };
 $('copyInviteLinkBtnModal').onclick = () => {
   if (!hasPerm('shareInvite')) return;
-  const code = getCurrentInviteCode();
-  safeCopy(location.origin + location.pathname + '#' + code);
+  safeCopy(location.origin + location.pathname + '#' + getCurrentInviteCode());
   const b = $('copyInviteLinkBtnModal'); b.textContent = '✓'; setTimeout(() => b.textContent = '🔗 Copiar link', 1200);
 };
 $('copyInviteCodeBtn').onclick = () => {
@@ -1247,13 +1248,6 @@ function doRenewInvite() {
   updateInviteDisplay();
   updateSettingsInviteDisplay();
   addSystemMessageHost('🔄 Código de convite renovado.');
-}
-
-function updateSettingsInviteDisplay() {
-  const codeEl = $('inviteCodeDisplay');
-  if (!codeEl) return;
-  if (!hasPerm('shareInvite')) { codeEl.textContent = '🔒 oculto'; return; }
-  codeEl.textContent = getCurrentInviteCode();
 }
 
 /* ============================================================
@@ -1358,9 +1352,7 @@ function renderUsers() {
     }
     ul.appendChild(li);
   }
-  const online = countOnlineMembers();
-  const total = S.users.size;
-  $('userCount').textContent = `${online}/${total}`;
+  $('userCount').textContent = `${countOnlineMembers()}/${S.users.size}`;
 }
 
 function kickUser(peerId) {
@@ -1379,9 +1371,7 @@ function doKickUser(peerId) {
     try { conn.send({ type: 'kick', reason: 'Removido pelo operador/admin.' }); } catch {}
     setTimeout(() => { try { conn.close(); } catch {} }, 300);
   }
-  S.conns.delete(peerId);
-  S.users.delete(peerId);
-  S._rateLimit.delete(peerId);
+  S.conns.delete(peerId); S.users.delete(peerId); S._rateLimit.delete(peerId);
   clearTyping(peerId);
   persistRoom();
   broadcastAll({ type: 'users-update', users: [...S.users.values()] });
@@ -1400,10 +1390,7 @@ function doBanUser(peerId, reason) {
   const u = S.users.get(peerId); if (!u) return;
   if (!u.deviceId) return sendError(peerId, 'Não foi possível banir: dispositivo não identificado.');
   S._bans = S._bans.filter(b => b.deviceId !== u.deviceId);
-  S._bans.push({
-    deviceId: u.deviceId, name: u.name,
-    reason: reason || '', bannedAt: Date.now(), bannedBy: S.myName
-  });
+  S._bans.push({ deviceId: u.deviceId, name: u.name, reason: reason || '', bannedAt: Date.now(), bannedBy: S.myName });
   for (const [tok, data] of [...S._resumeTokens]) {
     if (data.deviceId === u.deviceId) S._resumeTokens.delete(tok);
   }
@@ -1412,9 +1399,7 @@ function doBanUser(peerId, reason) {
     try { conn.send({ type: 'kick', reason: 'Você foi banido: ' + (reason || 'sem motivo informado') }); } catch {}
     setTimeout(() => { try { conn.close(); } catch {} }, 300);
   }
-  S.conns.delete(peerId);
-  S.users.delete(peerId);
-  S._rateLimit.delete(peerId);
+  S.conns.delete(peerId); S.users.delete(peerId); S._rateLimit.delete(peerId);
   clearTyping(peerId);
   persistRoom();
   broadcastAll({ type: 'users-update', users: [...S.users.values()] });
