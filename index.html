@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<!-- BUILD: v12.1 — Projeto Hermes (sem pop-ups de erro/teste) -->
+<!-- BUILD: v13 — Projeto Hermes + Lightbox de avatar -->
 <title>Projeto Hermes</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -24,7 +24,6 @@
   button.primary.speaking-as-bot:hover:not(:disabled) { background: #d97706; }
   button.secondary { background: #2a2a2e; color: #e6e6e8; border: 1px solid #3a3a3f; padding: 6px 10px; border-radius: 6px; }
   button.danger { background: #b91c1c; color: white; border: none; padding: 6px 10px; border-radius: 6px; }
-  button.success { background: #16a34a; color: white; border: none; padding: 6px 10px; border-radius: 6px; }
   button.icon-btn { background: transparent; border: none; color: #999; padding: 4px 6px; border-radius: 4px; }
   button.icon-btn:hover { background: #2a2a2e; color: #fff; }
   button.tiny { padding: 3px 8px; font-size: 11px; }
@@ -108,7 +107,19 @@
   .typing-line { font-size: 11px; color: #4ade80; padding: 2px 16px; min-height: 16px; font-style: italic; }
   .typing-line .ai-thinking { color: #f59e0b; }
 
-  .bot-avatar-img { width: 16px; height: 16px; border-radius: 50%; object-fit: cover; vertical-align: middle; border: 1px solid rgba(255,255,255,0.15); display: inline-block; flex-shrink: 0; }
+  /* === AVATARES CLICÁVEIS === */
+  .bot-avatar-img {
+    width: 16px; height: 16px; border-radius: 50%; object-fit: cover;
+    vertical-align: middle; border: 1px solid rgba(255,255,255,0.15);
+    display: inline-block; flex-shrink: 0;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .bot-avatar-img:hover {
+    transform: scale(1.2);
+    border-color: #5865f2;
+    box-shadow: 0 0 8px rgba(88, 101, 242, 0.5);
+  }
 
   .input-area { padding: 12px; border-top: 1px solid #2a2a2e; transition: background 0.2s; background: #17181b; }
   .input-area.speaking-as-bot { background: linear-gradient(to bottom, rgba(245, 158, 11, 0.08), #17181b); }
@@ -134,7 +145,6 @@
   .pending-card { background: #1c1c1f; border: 1px solid #2a2a2e; border-left-width: 3px; border-radius: 8px; padding: 10px; font-size: 13px; }
   .pending-meta { color: #bbb; margin-bottom: 6px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
   .pending-meta strong { color: #fff; }
-  .pending-context { font-size: 11px; color: #888; margin-top: 4px; font-style: italic; width: 100%; }
   .pending-text { background: #0f0f10; border-radius: 4px; padding: 6px 8px; margin: 6px 0; font-style: italic; color: #ddd; white-space: pre-wrap; word-break: break-word; }
   .pending-actions { display: flex; gap: 6px; margin: 6px 0; }
   .pending-response { min-height: 60px; resize: vertical; }
@@ -194,22 +204,7 @@
   .ai-status.testing { background: #f59e0b; animation: pulse 1s infinite; }
   @keyframes pulse { 50% { opacity: 0.5; } }
 
-  /* === NOVO: resultado do teste de IA inline === */
-  .ai-test-result {
-    display: none;
-    margin-top: 8px;
-    padding: 8px 10px;
-    background: #0f1f33;
-    border: 1px solid #2a4a6f;
-    border-radius: 6px;
-    font-size: 12px;
-    line-height: 1.5;
-    color: #b8c8dd;
-    white-space: pre-wrap;
-    word-break: break-word;
-    max-height: 200px;
-    overflow-y: auto;
-  }
+  .ai-test-result { display: none; margin-top: 8px; padding: 8px 10px; background: #0f1f33; border: 1px solid #2a4a6f; border-radius: 6px; font-size: 12px; line-height: 1.5; color: #b8c8dd; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto; }
   .ai-test-result.show { display: block; }
   .ai-test-result.error { background: #3a1a1a; border-color: #7f1d1d; color: #fca5a5; }
   .ai-test-result.success { background: #14210f; border-color: #2f5622; color: #a7d4a0; }
@@ -244,10 +239,76 @@
   .help-box code { background: #0a0a0b; padding: 1px 5px; border-radius: 3px; color: #8eb4ff; font-family: ui-monospace, monospace; font-size: 11px; }
   .help-box a { color: #8eb4ff; }
 
+  /* === LIGHTBOX DE AVATAR === */
+  .avatar-lightbox {
+    position: fixed; inset: 0; z-index: 300;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.15s ease;
+  }
+  .avatar-lightbox-backdrop {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.88);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    cursor: zoom-out;
+  }
+  .avatar-lightbox-content {
+    position: relative;
+    background: #17181b;
+    border: 1px solid #2a2a2e;
+    border-radius: 16px;
+    padding: 20px;
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    animation: zoomIn 0.2s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .avatar-lightbox-close {
+    position: absolute; top: 10px; right: 10px;
+    background: #2a2a2e; border: 1px solid #3a3a3f; color: #ccc;
+    width: 32px; height: 32px; border-radius: 50%;
+    font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .avatar-lightbox-close:hover { background: #b91c1c; color: white; border-color: #b91c1c; }
+  .avatar-lightbox-content img {
+    width: 256px; height: 256px;
+    max-width: 80vw; max-height: 60vh;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #2a2a2e;
+    margin: 8px auto 16px;
+    display: block;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    image-rendering: -webkit-optimize-contrast;
+  }
+  .avatar-lightbox-content img.loading { opacity: 0.5; }
+  .avatar-lightbox-content h3 {
+    margin: 0 0 8px;
+    font-size: 20px;
+    font-weight: 700;
+    word-break: break-word;
+  }
+  .avatar-lightbox-content p {
+    margin: 0;
+    color: #aaa;
+    font-size: 13px;
+    line-height: 1.5;
+    word-break: break-word;
+  }
+  .avatar-lightbox-content p.empty-desc { display: none; }
+
   @media (max-width: 900px) {
     #app { grid-template-columns: 1fr; }
     .sidebar { display: none; }
     #pendingPanel { position: fixed; right: 0; top: 0; bottom: 0; z-index: 50; box-shadow: -4px 0 20px rgba(0,0,0,0.5); width: 90vw; max-width: 400px; }
+    .avatar-lightbox-content img { width: 200px; height: 200px; }
+    .avatar-lightbox-content h3 { font-size: 17px; }
   }
 </style>
 </head>
@@ -408,7 +469,7 @@
 
     <div id="stab-bots" class="stab-content" style="display:none">
       <div class="help-box">
-        💡 Cada bot tem uma "ficha" (personalidade, cenário, exemplos). Com <b>IA Automática ligada</b>, ele responde sozinho usando a API gratuita do <a href="https://pollinations.ai" target="_blank">Pollinations</a>. Desligado = fila manual (você responde por ele).
+        💡 Cada bot tem uma "ficha" (personalidade, cenário, exemplos). Com <b>IA Automática ligada</b>, ele responde sozinho usando a API gratuita do <a href="https://pollinations.ai" target="_blank">Pollinations</a>. Clique em qualquer avatar no chat para ver em tamanho grande.
       </div>
       <div id="botsList"></div>
       <div class="add-bot-row">
@@ -445,9 +506,20 @@
   </div>
 </div>
 
+<!-- === LIGHTBOX DE AVATAR === -->
+<div id="avatarLightbox" class="avatar-lightbox" style="display:none">
+  <div class="avatar-lightbox-backdrop" id="avatarLightboxBackdrop"></div>
+  <div class="avatar-lightbox-content">
+    <button class="avatar-lightbox-close" id="avatarLightboxClose" title="Fechar (Esc)">✕</button>
+    <img id="avatarLightboxImg" src="" alt="Avatar do bot">
+    <h3 id="avatarLightboxName"></h3>
+    <p id="avatarLightboxDesc"></p>
+  </div>
+</div>
+
 <script>
 /* ============================================================
-   PROJETO HERMES v12.1 — sem pop-ups de erro, tudo no chat
+   PROJETO HERMES v13 — lightbox de avatar
    ============================================================ */
 
 const $ = (id) => document.getElementById(id);
@@ -489,7 +561,11 @@ function getDeviceId() {
   } catch { return uuid(); }
 }
 
-function fileToResizedDataUrl(file, maxSize = 128, quality = 0.8) {
+/* === NOVO: AVATAR_SIZE aumentado para 256px (era 128) === */
+const AVATAR_SIZE = 256;
+const AVATAR_QUALITY = 0.82;
+
+function fileToResizedDataUrl(file, maxSize = AVATAR_SIZE, quality = AVATAR_QUALITY) {
   return new Promise((resolve, reject) => {
     if (!file || !file.type.startsWith('image/')) return reject(new Error('Não é uma imagem'));
     const reader = new FileReader();
@@ -507,6 +583,7 @@ function fileToResizedDataUrl(file, maxSize = 128, quality = 0.8) {
           else if (h > w && h > maxSize) { w = Math.round(w * maxSize / h); h = maxSize; }
           canvas.width = w; canvas.height = h;
           const ctx = canvas.getContext('2d');
+          ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(img, 0, 0, w, h);
           resolve(canvas.toDataURL('image/jpeg', quality));
         } catch (err) { reject(err); }
@@ -721,9 +798,7 @@ function uniqueName(base, existing) {
 }
 function findUserByDevice(deviceId) {
   if (!deviceId) return null;
-  for (const [pid, u] of S.users) {
-    if (u.deviceId === deviceId && u.role !== 'operator') return { pid, user: u };
-  }
+  for (const [pid, u] of S.users) if (u.deviceId === deviceId && u.role !== 'operator') return { pid, user: u };
   return null;
 }
 function countOnlineMembers() { let n = 0; for (const u of S.users.values()) if (u.online !== false) n++; return n; }
@@ -755,17 +830,70 @@ function beep(freq = 880, dur = 0.08, vol = 0.05) {
   } catch {}
 }
 
-function showScreen(name) {
-  $('setup').style.display = name === 'setup' ? 'flex' : 'none';
-  $('app').style.display = name === 'app' ? 'grid' : 'none';
-}
-function safeCopy(text) {
-  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).catch(() => prompt('Copie:', text));
-  else prompt('Copie:', text);
+/* ============================================================
+   LIGHTBOX DE AVATAR
+   ============================================================ */
+function showBotAvatar(botId) {
+  const bot = findBot(botId);
+  if (!bot || !bot.avatar) return;
+  const lb = $('avatarLightbox');
+  const img = $('avatarLightboxImg');
+  const nameEl = $('avatarLightboxName');
+  const descEl = $('avatarLightboxDesc');
+
+  img.classList.add('loading');
+  img.src = bot.avatar;
+  img.onload = () => img.classList.remove('loading');
+  img.onerror = () => img.classList.remove('loading');
+
+  nameEl.textContent = bot.name;
+  nameEl.style.color = bot.color || '#8eb4ff';
+
+  if (bot.description) {
+    descEl.textContent = bot.description;
+    descEl.classList.remove('empty-desc');
+  } else {
+    descEl.classList.add('empty-desc');
+  }
+
+  lb.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  /* Limpa a imagem quando fechar pra não ficar na memória */
+  lb._closeHandler = () => { img.src = ''; };
 }
 
+function closeAvatarLightbox() {
+  const lb = $('avatarLightbox');
+  if (lb.style.display === 'none') return;
+  lb.style.display = 'none';
+  document.body.style.overflow = '';
+  if (typeof lb._closeHandler === 'function') {
+    try { lb._closeHandler(); } catch {}
+  }
+}
+
+$('avatarLightboxClose').onclick = closeAvatarLightbox;
+$('avatarLightboxBackdrop').onclick = closeAvatarLightbox;
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if ($('avatarLightbox').style.display !== 'none') { e.preventDefault(); closeAvatarLightbox(); return; }
+    if ($('settingsModal').style.display !== 'none') $('settingsModal').style.display = 'none';
+  }
+});
+
+/* Delegação global: qualquer .bot-avatar-img clicada abre o lightbox */
+document.addEventListener('click', (e) => {
+  const img = e.target.closest('.bot-avatar-img');
+  if (img && img.dataset.botId) {
+    e.stopPropagation();
+    showBotAvatar(img.dataset.botId);
+  }
+});
+
 /* ============================================================
-   IA — Pollinations (sem pop-ups de erro)
+   IA — Pollinations
    ============================================================ */
 function buildSystemPrompt(bot) {
   let p = `Você é "${bot.name}", um personagem em um RPG interativo multiplayer. Você NUNCA deve sair do personagem. NUNCA diga que é uma IA. Responda sempre em português brasileiro, na primeira pessoa.\n\nRegras:\n- Ações/descrições entre asteriscos (ex: *sorri e cruza os braços*)\n- Diálogos sem asteriscos\n- Seja imersivo, reaja ao contexto, mantenha a coerência`;
@@ -775,7 +903,6 @@ function buildSystemPrompt(bot) {
   if (bot.examples) p += `\n\nEXEMPLOS DE DIÁLOGO:\n${bot.examples}`;
   return p;
 }
-
 function getConversationHistory(botId, userId, limit = 20) {
   const relevant = S.messages.filter(m => !m.deleted && (
     (m.fromId === userId && m.relayBotId === botId) ||
@@ -783,7 +910,6 @@ function getConversationHistory(botId, userId, limit = 20) {
   ));
   return relevant.slice(-limit);
 }
-
 async function callPollinationsAI(bot, history, userText, userName, retries = 2) {
   const systemPrompt = buildSystemPrompt(bot);
   const messages = [{ role: 'system', content: systemPrompt }];
@@ -791,13 +917,10 @@ async function callPollinationsAI(bot, history, userText, userName, retries = 2)
     messages.push({ role: h.type === 'bot' ? 'assistant' : 'user', content: h.type === 'bot' ? String(h.text || '') : `${h.fromName || 'Jogador'}: ${h.text || ''}` });
   }
   messages.push({ role: 'user', content: `${userName}: ${userText}` });
-
   const model = AI_MODELS.some(m => m.value === bot.model) ? bot.model : 'openai';
   const temperature = Math.max(0, Math.min(2, Number(bot.temperature) || 0.8));
-
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      console.log(`[Hermes] Chamando Pollinations (${model}) para ${bot.name}, tentativa ${attempt + 1}`);
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
       const res = await fetch('https://text.pollinations.ai/openai', {
@@ -817,77 +940,48 @@ async function callPollinationsAI(bot, history, userText, userName, retries = 2)
     }
   }
 }
-
 async function testBotAI(bot) {
   const resultEl = document.getElementById('aiTestResult-' + bot.id);
   const statusEl = document.getElementById('aiStatus-' + bot.id);
   if (statusEl) { statusEl.textContent = '⏳ testando'; statusEl.className = 'ai-status testing'; }
-  if (resultEl) { resultEl.className = 'ai-test-result'; resultEl.textContent = 'Enviando requisição para a API...'; }
-
+  if (resultEl) { resultEl.className = 'ai-test-result'; resultEl.textContent = 'Enviando requisição...'; }
   try {
     const reply = await callPollinationsAI(bot, [], 'Diga "olá" e se apresente brevemente.', 'Mestre', 1);
     if (statusEl) { statusEl.textContent = '✅ ok'; statusEl.className = 'ai-status'; }
-    if (resultEl) {
-      resultEl.className = 'ai-test-result success show';
-      resultEl.innerHTML = `<strong>✅ Resposta da IA:</strong>\n\n${escapeHtml(reply)}`;
-    }
+    if (resultEl) { resultEl.className = 'ai-test-result success show'; resultEl.innerHTML = `<strong>✅ Resposta:</strong>\n\n${escapeHtml(reply)}`; }
   } catch (e) {
     if (statusEl) { statusEl.textContent = '❌ falhou'; statusEl.className = 'ai-status off'; }
-    if (resultEl) {
-      resultEl.className = 'ai-test-result error show';
-      resultEl.innerHTML = `<strong>❌ Falha:</strong> ${escapeHtml(e.message)}\n\n` +
-        `Dicas:\n• Verifique sua internet\n• Tente novamente em 10s (Pollinations às vezes instabiliza)\n• Troque o modelo (Mistral, Llama)`;
-    }
-    /* Restaura o status visual padrão depois de 5s */
+    if (resultEl) { resultEl.className = 'ai-test-result error show'; resultEl.innerHTML = `<strong>❌ Falha:</strong> ${escapeHtml(e.message)}\n\nDicas:\n• Verifique a internet\n• Tente em 10s\n• Troque o modelo`; }
     setTimeout(() => {
       const cur = findBot(bot.id);
-      if (statusEl && cur) {
-        statusEl.textContent = cur.autoMode ? '🤖 IA' : 'manual';
-        statusEl.className = 'ai-status ' + (cur.autoMode ? '' : 'off');
-      }
+      if (statusEl && cur) { statusEl.textContent = cur.autoMode ? '🤖 IA' : 'manual'; statusEl.className = 'ai-status ' + (cur.autoMode ? '' : 'off'); }
     }, 5000);
   }
 }
 
-/* === Geração assíncrona com erro no chat (sem alert) === */
 async function hostGenerateAndReply(peerId, user, bot, userText, originalMsgId) {
   S._botThinking.set(bot.id, true);
   broadcastAll({ type: 'bot-thinking', botId: bot.id, botName: bot.name, botEmoji: bot.emoji });
   renderTypingLine();
-
   try {
     const history = getConversationHistory(bot.id, peerId, bot.maxHistory || 20);
     const reply = await callPollinationsAI(bot, history, userText, user.name);
-
     const botMsg = {
       id: uuid(), type: 'bot', fromName: bot.name,
       botId: bot.id, botEmoji: bot.emoji, botColor: bot.color,
       text: String(reply).slice(0, 4000),
-      ts: Date.now(), autoGenerated: true, spokenTo: peerId,
-      replyToName: user.name
+      ts: Date.now(), autoGenerated: true, spokenTo: peerId, replyToName: user.name
     };
     addMessageLocal(botMsg);
     broadcastAll({ type: 'chat', msg: botMsg });
-
-    if (originalMsgId) {
-      const orig = S.messages.find(m => m.id === originalMsgId);
-      if (orig) { delete orig.relayPending; persistMessage(orig); }
-    }
+    if (originalMsgId) { const orig = S.messages.find(m => m.id === originalMsgId); if (orig) { delete orig.relayPending; persistMessage(orig); } }
     beep(1046, 0.08, 0.04);
   } catch (err) {
     console.error('[Hermes] Erro na IA:', err);
-    /* ⚠️ CORREÇÃO: erro vai pro CHAT como mensagem de sistema, não alert */
-    const sysMsg = {
-      id: uuid(), type: 'system', warn: true,
-      text: `⚠️ ${bot.name} não conseguiu responder (${err.message}). Tente novamente em alguns segundos.`,
-      ts: Date.now()
-    };
+    const sysMsg = { id: uuid(), type: 'system', warn: true, text: `⚠️ ${bot.name} não conseguiu responder (${err.message}). Tente em alguns segundos.`, ts: Date.now() };
     addMessageLocal(sysMsg);
     broadcastAll({ type: 'chat', msg: sysMsg });
-    if (originalMsgId) {
-      const orig = S.messages.find(m => m.id === originalMsgId);
-      if (orig) { delete orig.relayPending; persistMessage(orig); }
-    }
+    if (originalMsgId) { const orig = S.messages.find(m => m.id === originalMsgId); if (orig) { delete orig.relayPending; persistMessage(orig); } }
   } finally {
     S._botThinking.delete(bot.id);
     broadcastAll({ type: 'bot-thinking-end', botId: bot.id });
@@ -898,6 +992,15 @@ async function hostGenerateAndReply(peerId, user, bot, userText, originalMsgId) 
 /* ============================================================
    SETUP SCREEN
    ============================================================ */
+function showScreen(name) {
+  $('setup').style.display = name === 'setup' ? 'flex' : 'none';
+  $('app').style.display = name === 'app' ? 'grid' : 'none';
+}
+function safeCopy(text) {
+  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).catch(() => prompt('Copie:', text));
+  else prompt('Copie:', text);
+}
+
 document.querySelectorAll('.tab').forEach(tab => {
   tab.onclick = () => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -963,26 +1066,16 @@ function onHostNewConnection(conn) {
     const resumeToken = String(meta.resumeToken || '');
 
     const banned = deviceId ? S._bans.find(b => b.deviceId === deviceId) : null;
-    if (banned) {
-      conn.send({ type: 'ban-rejected', reason: banned.reason || 'Você foi banido.' });
-      setTimeout(() => conn.close(), 400); return;
-    }
+    if (banned) { conn.send({ type: 'ban-rejected', reason: banned.reason || 'Você foi banido.' }); setTimeout(() => conn.close(), 400); return; }
 
     const resumeData = resumeToken ? S._resumeTokens.get(resumeToken) : null;
     const isResume = !!(resumeData && resumeData.deviceId === deviceId);
     const isInvite = !!(inviteToken && isValidInviteToken(inviteToken));
-    if (!isResume && !isInvite) {
-      conn.send({ type: 'auth-rejected', reason: 'Código inválido. Peça um novo código.' });
-      setTimeout(() => conn.close(), 400); return;
-    }
+    if (!isResume && !isInvite) { conn.send({ type: 'auth-rejected', reason: 'Código inválido.' }); setTimeout(() => conn.close(), 400); return; }
 
     const existing = findUserByDevice(deviceId);
     const isReconnect = !!existing;
-
-    if (!existing && countTotalMembers() >= MAX_FRIENDS) {
-      conn.send({ type: 'error', message: 'Sala cheia.' });
-      setTimeout(() => conn.close(), 400); return;
-    }
+    if (!existing && countTotalMembers() >= MAX_FRIENDS) { conn.send({ type: 'error', message: 'Sala cheia.' }); setTimeout(() => conn.close(), 400); return; }
 
     let prevMuted = false, prevRole = 'user', prevPerms = {}, prevName = '';
     if (existing) {
@@ -1039,9 +1132,8 @@ function hostHandleChat(peerId, data) {
   clearTyping(peerId);
 }
 
-/* ⚠️ CORREÇÃO: sendSysWarn envia mensagem de sistema em vez de alert */
 function sendSysWarn(peerId, message) {
-  const msg = { id: uuid(), type: 'system', warn: true, text: message, ts: Date.now(), forPeer: peerId };
+  const msg = { id: uuid(), type: 'system', warn: true, text: message, ts: Date.now() };
   addMessageLocal(msg);
   const conn = S.conns.get(peerId);
   if (conn) try { conn.send({ type: 'chat', msg }); } catch {}
@@ -1057,7 +1149,6 @@ function hostHandleRelayRequest(peerId, data) {
   if (bot.adminOnly && user.role === 'user') return sendSysWarn(peerId, `O bot "${bot.name}" é só para admins.`);
 
   const text = String(data.text || '').slice(0, 4000).trim(); if (!text) return;
-
   const relayMsgId = uuid();
   const relayMsg = {
     id: relayMsgId, type: 'user', fromId: peerId, fromName: user.name, text, ts: Date.now(),
@@ -1070,7 +1161,7 @@ function hostHandleRelayRequest(peerId, data) {
 
   if (bot.autoMode) {
     if (S._botThinking.get(bot.id)) {
-      sendSysWarn(peerId, `⏳ ${bot.name} ainda está pensando. Aguarde um instante.`);
+      sendSysWarn(peerId, `⏳ ${bot.name} ainda está pensando. Aguarde.`);
       const orig = S.messages.find(m => m.id === relayMsgId);
       if (orig) { delete orig.relayPending; persistMessage(orig); }
       return;
@@ -1085,12 +1176,7 @@ function hostHandleRelayRequest(peerId, data) {
       return;
     }
     const relayId = uuid();
-    const relay = {
-      id: relayId, userId: peerId, userName: user.name,
-      botId: bot.id, botName: bot.name, botEmoji: bot.emoji, botColor: bot.color,
-      text, ts: Date.now(), userRole: user.role
-    };
-    S.pending.set(relayId, relay);
+    S.pending.set(relayId, { id: relayId, userId: peerId, userName: user.name, botId: bot.id, botName: bot.name, botEmoji: bot.emoji, botColor: bot.color, text, ts: Date.now(), userRole: user.role });
     const orig = S.messages.find(m => m.id === relayMsgId);
     if (orig) { orig.relayPending = relayId; persistMessage(orig); }
     broadcastAll({ type: 'pending-update', pending: [...S.pending.values()] });
@@ -1105,11 +1191,7 @@ function hostHandleSpeakAsBot(peerId, data) {
   if (!checkRateLimit(peerId)) return;
   const bot = findBot(data.botId); if (!bot) return sendSysWarn(peerId, 'Bot não encontrado.');
   const text = String(data.text || '').slice(0, 4000).trim(); if (!text) return;
-  const botMsg = {
-    id: uuid(), type: 'bot', fromName: bot.name,
-    botId: bot.id, botEmoji: bot.emoji, botColor: bot.color,
-    text, ts: Date.now(), spokenBy: user.name
-  };
+  const botMsg = { id: uuid(), type: 'bot', fromName: bot.name, botId: bot.id, botEmoji: bot.emoji, botColor: bot.color, text, ts: Date.now(), spokenBy: user.name };
   addMessageLocal(botMsg); broadcastAll({ type: 'chat', msg: botMsg });
   clearTyping(peerId); beep(1046, 0.05, 0.03);
 }
@@ -1150,9 +1232,7 @@ function joinRoom(code, name, opts = {}) {
     if (opts.resumeToken) metadata.resumeToken = opts.resumeToken;
     const conn = peer.connect('relaychat-' + code, { reliable: true, metadata });
     S.conns.set('host', conn);
-    const timeout = setTimeout(() => {
-      if (!S.conns.get('host')?.open) { if (!opts.auto) alert('Não foi possível conectar.'); peer.destroy(); }
-    }, 10000);
+    const timeout = setTimeout(() => { if (!S.conns.get('host')?.open) { if (!opts.auto) alert('Não foi possível conectar.'); peer.destroy(); } }, 10000);
     let gotWelcome = false; let gotReject = false;
     conn.on('open', () => { clearTimeout(timeout); });
     conn.on('data', (data) => {
@@ -1213,19 +1293,18 @@ function userOnData(data) {
     case 'bot-thinking-end': S._botThinking.delete(data.botId); renderTypingLine(); return;
     case 'ban-rejected':
       deleteKV('lastRoom'); location.hash = '';
-      addSystemMessageLocal('🚫 Você foi banido: ' + (data.reason || 'sem motivo'));
+      addSystemMessageLocal('🚫 Você foi banido: ' + (data.reason || '—'));
       setTimeout(() => location.reload(), 1500); return;
     case 'auth-rejected':
       deleteKV('lastRoom'); location.hash = '';
-      addSystemMessageLocal('❌ Não foi possível entrar: ' + (data.reason || 'código inválido'));
+      addSystemMessageLocal('❌ Não foi possível entrar: ' + (data.reason || 'inválido'));
       setTimeout(() => location.reload(), 1500); return;
     case 'kick':
-      addSystemMessageLocal('Você foi removido da sala: ' + (data.reason || '—'));
+      addSystemMessageLocal('Você foi removido: ' + (data.reason || '—'));
       if (!data.temporary) deleteKV('lastRoom');
       S.peer?.destroy();
       setTimeout(() => location.reload(), 1500);
       return;
-    /* ⚠️ CORREÇÃO: erro agora é mensagem de sistema no chat, não alert() */
     case 'error':
       addSystemMessageLocal('⚠️ ' + (data.message || 'Erro'));
       return;
@@ -1334,9 +1413,9 @@ $('bgFile').onchange = async (e) => {
   if (!file || !hasPerm('manageSettings')) return;
   try {
     const dataUrl = await fileToResizedDataUrl(file, 1280, 0.65);
-    if (dataUrl.length > BG_MAX_BYTES && !confirm(`Imagem ${(dataUrl.length/1024).toFixed(0)}KB. Enviar mesmo assim?`)) return;
+    if (dataUrl.length > BG_MAX_BYTES && !confirm(`Imagem ${(dataUrl.length/1024).toFixed(0)}KB. Enviar?`)) return;
     saveSettings({ background: dataUrl });
-  } catch (err) { alert('Erro ao processar imagem: ' + (err?.message || err)); }
+  } catch (err) { alert('Erro: ' + (err?.message || err)); }
 };
 $('bgClearBtn').onclick = () => {
   if (!hasPerm('manageSettings') || !S.settings.background) return;
@@ -1448,7 +1527,7 @@ function doKickUser(peerId) {
   const u = S.users.get(peerId); if (!u) return;
   for (const [tok, data] of [...S._resumeTokens]) if (data.deviceId === u.deviceId) S._resumeTokens.delete(tok);
   const conn = S.conns.get(peerId);
-  if (conn) { try { conn.send({ type: 'kick', reason: 'Removido pelo operador/admin.' }); } catch {} setTimeout(() => { try { conn.close(); } catch {} }, 300); }
+  if (conn) { try { conn.send({ type: 'kick', reason: 'Removido.' }); } catch {} setTimeout(() => { try { conn.close(); } catch {} }, 300); }
   S.conns.delete(peerId); S.users.delete(peerId); S._rateLimit.delete(peerId); clearTyping(peerId);
   persistRoom(); broadcastAll({ type: 'users-update', users: [...S.users.values()] });
   addSystemMessageHost(`${u.name} foi removido.`);
@@ -1467,7 +1546,7 @@ function doBanUser(peerId, reason) {
   S._bans.push({ deviceId: u.deviceId, name: u.name, reason: reason || '', bannedAt: Date.now(), bannedBy: S.myName });
   for (const [tok, data] of [...S._resumeTokens]) if (data.deviceId === u.deviceId) S._resumeTokens.delete(tok);
   const conn = S.conns.get(peerId);
-  if (conn) { try { conn.send({ type: 'kick', reason: 'Você foi banido: ' + (reason || 'sem motivo') }); } catch {} setTimeout(() => { try { conn.close(); } catch {} }, 300); }
+  if (conn) { try { conn.send({ type: 'kick', reason: 'Você foi banido: ' + (reason || '—') }); } catch {} setTimeout(() => { try { conn.close(); } catch {} }, 300); }
   S.conns.delete(peerId); S.users.delete(peerId); S._rateLimit.delete(peerId); clearTyping(peerId);
   persistRoom(); broadcastAll({ type: 'users-update', users: [...S.users.values()] });
   addSystemMessageHost(`${u.name} foi banido.`);
@@ -1493,11 +1572,15 @@ function renderMessages() {
     const div = document.createElement('div'); div.className = 'msg ' + m.type + (m.warn ? ' warn' : '');
     const time = new Date(m.ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const delBtn = canDel ? `<button class="del-btn" data-id="${escapeHtml(m.id)}" title="Apagar">✕</button>` : '';
+
     if (m.type === 'system') {
       div.innerHTML = `<span class="text">${escapeHtml(m.text)}</span>`;
     } else if (m.type === 'bot') {
       const vis = getBotVisual(m.botId, m.botEmoji, m.botColor);
-      const nameVisual = vis.avatar ? `<img class="bot-avatar-img" src="${escapeHtml(vis.avatar)}" alt="">` : `<span class="bot-emoji">${escapeHtml(vis.emoji)}</span>`;
+      /* === NOVO: avatar clicável com data-bot-id e título === */
+      const nameVisual = vis.avatar
+        ? `<img class="bot-avatar-img" data-bot-id="${escapeHtml(m.botId || '')}" src="${escapeHtml(vis.avatar)}" alt="${escapeHtml(m.fromName)}" title="Clique para ver em tamanho grande">`
+        : `<span class="bot-emoji">${escapeHtml(vis.emoji)}</span>`;
       div.style.borderLeft = '3px solid ' + vis.color;
       div.innerHTML =
         `<span class="name" style="color:${escapeHtml(vis.color)}">${nameVisual}${escapeHtml(m.fromName)}</span>` +
@@ -1506,7 +1589,10 @@ function renderMessages() {
         `<div class="text">${escapeHtml(m.text)}</div>` + delBtn;
     } else {
       const vis = getBotVisual(m.relayBotId, m.relayBotEmoji, m.relayBotColor);
-      const relayBotVisual = vis.avatar ? `<img class="bot-avatar-img" src="${escapeHtml(vis.avatar)}" alt="">` : `<span class="bot-emoji">${escapeHtml(vis.emoji)}</span>`;
+      /* === NOVO: avatar clicável na referência do bot === */
+      const relayBotVisual = vis.avatar
+        ? `<img class="bot-avatar-img" data-bot-id="${escapeHtml(m.relayBotId || '')}" src="${escapeHtml(vis.avatar)}" alt="${escapeHtml(m.relayBot)}" title="Clique para ver em tamanho grande">`
+        : `<span class="bot-emoji">${escapeHtml(vis.emoji)}</span>`;
       div.innerHTML =
         `<span class="name">${escapeHtml(m.fromName)}</span>` +
         (m.relayBot ? ` <span class="time">→ <span style="color:${escapeHtml(vis.color)}; display:inline-flex; align-items:center; gap:3px">${relayBotVisual}${escapeHtml(m.relayBot)}</span></span>` : '') +
@@ -1533,7 +1619,10 @@ function renderPending() {
   if (S.pending.size === 0) { list.innerHTML = '<p class="empty">Nenhum pedido manual pendente.</p>'; return; }
   for (const relay of S.pending.values()) {
     const vis = getBotVisual(relay.botId, relay.botEmoji, relay.botColor);
-    const botLabel = vis.avatar ? `<img class="bot-avatar-img" src="${escapeHtml(vis.avatar)}" alt="">` : `<span>${escapeHtml(vis.emoji)}</span>`;
+    /* === NOVO: avatar clicável na fila de relay === */
+    const botLabel = vis.avatar
+      ? `<img class="bot-avatar-img" data-bot-id="${escapeHtml(relay.botId || '')}" src="${escapeHtml(vis.avatar)}" alt="${escapeHtml(relay.botName || relay.bot)}" title="Clique para ver em tamanho grande">`
+      : `<span>${escapeHtml(vis.emoji)}</span>`;
     const card = document.createElement('div'); card.className = 'pending-card';
     card.style.borderLeftColor = vis.color;
     card.innerHTML = `
@@ -1715,7 +1804,7 @@ function renderBotsList() {
 
     row.innerHTML = `
       <div class="bot-config-header">
-        <label class="bot-avatar-picker ${editable ? '' : 'disabled'}" title="${editable ? 'Clique para enviar imagem' : 'Avatar'}">
+        <label class="bot-avatar-picker ${editable ? '' : 'disabled'}" title="${editable ? 'Clique para trocar a imagem' : 'Avatar'}">
           ${editable ? '<input type="file" class="bot-avatar-file" accept="image/*" style="display:none">' : ''}
           ${avatarContent}
         </label>
@@ -1729,46 +1818,19 @@ function renderBotsList() {
       <div class="ai-toggle-row ${bot.autoMode ? '' : 'off'}">
         <input type="checkbox" class="bot-automode-input" id="autoMode-${bot.id}" ${bot.autoMode ? 'checked' : ''} ${editable ? '' : 'disabled'}>
         <label for="autoMode-${bot.id}" style="margin:0; cursor:pointer; font-weight:600">🤖 IA Automática</label>
-        <span style="margin-left:auto; font-size:11px; opacity:0.7">${bot.autoMode ? 'Pollinations responde sozinho' : 'Fila manual'}</span>
+        <span style="margin-left:auto; font-size:11px; opacity:0.7">${bot.autoMode ? 'Pollinations responde' : 'Fila manual'}</span>
       </div>
 
       <div class="bot-config-grid">
-        <div class="full">
-          <label>Descrição curta</label>
-          <input type="text" class="bot-desc-input" value="${escapeHtml(bot.description || '')}" maxlength="120" ${editable ? '' : 'disabled'}>
-        </div>
-        <div class="full">
-          <label>💭 Personalidade</label>
-          <textarea class="bot-personality-input" rows="4" placeholder="Ex: Sou uma elfa arqueira de 300 anos. Falo de forma direta e um pouco sarcástica..." ${editable ? '' : 'disabled'}>${escapeHtml(bot.personality || '')}</textarea>
-        </div>
-        <div class="full">
-          <label>🌍 Cenário / Mundo</label>
-          <textarea class="bot-scenario-input" rows="3" placeholder="Ex: Floresta de Eldoria, anoitecer. O grupo está fugindo..." ${editable ? '' : 'disabled'}>${escapeHtml(bot.scenario || '')}</textarea>
-        </div>
-        <div class="full">
-          <label>💬 Exemplos de diálogo</label>
-          <textarea class="bot-examples-input" rows="3" placeholder="Ex:&#10;Jogador: Me ajuda?&#10;Bot: *encosta na árvore* Depende do que oferece em troca." ${editable ? '' : 'disabled'}>${escapeHtml(bot.examples || '')}</textarea>
-        </div>
-        <div class="full">
-          <label>Greeting / dica inicial</label>
-          <input type="text" class="bot-greet-input" value="${escapeHtml(bot.greeting || '')}" maxlength="200" ${editable ? '' : 'disabled'}>
-        </div>
-        <div>
-          <label>Modelo</label>
-          <select class="bot-model-input" ${editable ? '' : 'disabled'}>${modelOptions}</select>
-        </div>
-        <div>
-          <label>Temperatura (${bot.temperature})</label>
-          <input type="range" class="bot-temp-input" min="0" max="1.5" step="0.1" value="${bot.temperature}" ${editable ? '' : 'disabled'}>
-        </div>
-        <div>
-          <label>Máx. histórico</label>
-          <input type="number" class="bot-maxhistory-input" value="${bot.maxHistory || 20}" min="4" max="40" ${editable ? '' : 'disabled'}>
-        </div>
-        <div>
-          <label>Máx. fila manual</label>
-          <input type="number" class="bot-maxpending-input" value="${bot.maxPending}" min="1" max="20" ${editable ? '' : 'disabled'}>
-        </div>
+        <div class="full"><label>Descrição curta</label><input type="text" class="bot-desc-input" value="${escapeHtml(bot.description || '')}" maxlength="120" ${editable ? '' : 'disabled'}></div>
+        <div class="full"><label>💭 Personalidade</label><textarea class="bot-personality-input" rows="4" placeholder="Ex: Sou uma elfa arqueira de 300 anos..." ${editable ? '' : 'disabled'}>${escapeHtml(bot.personality || '')}</textarea></div>
+        <div class="full"><label>🌍 Cenário / Mundo</label><textarea class="bot-scenario-input" rows="3" placeholder="Ex: Floresta de Eldoria, anoitecer..." ${editable ? '' : 'disabled'}>${escapeHtml(bot.scenario || '')}</textarea></div>
+        <div class="full"><label>💬 Exemplos de diálogo</label><textarea class="bot-examples-input" rows="3" placeholder="Ex:&#10;Jogador: Me ajuda?&#10;Bot: *encosta na árvore* Depende do que oferece." ${editable ? '' : 'disabled'}>${escapeHtml(bot.examples || '')}</textarea></div>
+        <div class="full"><label>Greeting / dica inicial</label><input type="text" class="bot-greet-input" value="${escapeHtml(bot.greeting || '')}" maxlength="200" ${editable ? '' : 'disabled'}></div>
+        <div><label>Modelo</label><select class="bot-model-input" ${editable ? '' : 'disabled'}>${modelOptions}</select></div>
+        <div><label>Temperatura (${bot.temperature})</label><input type="range" class="bot-temp-input" min="0" max="1.5" step="0.1" value="${bot.temperature}" ${editable ? '' : 'disabled'}></div>
+        <div><label>Máx. histórico</label><input type="number" class="bot-maxhistory-input" value="${bot.maxHistory || 20}" min="4" max="40" ${editable ? '' : 'disabled'}></div>
+        <div><label>Máx. fila manual</label><input type="number" class="bot-maxpending-input" value="${bot.maxPending}" min="1" max="20" ${editable ? '' : 'disabled'}></div>
         <div style="grid-column: 1 / -1; flex-direction: row; gap: 12px; margin-top: 4px">
           <label style="margin:0;display:flex;align-items:center;gap:4px"><input type="checkbox" class="bot-online-input" ${bot.online ? 'checked' : ''} ${editable ? '' : 'disabled'}> Online</label>
           <label style="margin:0;display:flex;align-items:center;gap:4px"><input type="checkbox" class="bot-adminonly-input" ${bot.adminOnly ? 'checked' : ''} ${editable ? '' : 'disabled'}> Só admins</label>
@@ -1776,9 +1838,10 @@ function renderBotsList() {
       </div>
 
       <div class="bot-config-footer">
-        <button class="secondary test-ai-btn tiny" title="Testa a IA sem pop-up">⚡ Testar IA</button>
+        <button class="secondary test-ai-btn tiny">⚡ Testar IA</button>
         <button class="secondary speak-btn tiny">🎭 Falar como bot</button>
-        ${editable && bot.avatar ? '<button class="secondary remove-avatar tiny">🗑️ Remover avatar</button>' : ''}
+        ${bot.avatar ? '<button class="secondary view-avatar-btn tiny">🔍 Ver em alta</button>' : ''}
+        ${editable && bot.avatar ? '<button class="secondary remove-avatar tiny">🗑️ Remover</button>' : ''}
       </div>
       <div class="ai-test-result" id="aiTestResult-${bot.id}"></div>`;
 
@@ -1801,7 +1864,7 @@ function renderBotsList() {
       row.querySelector('.bot-automode-input').onchange = (e) => {
         const enabled = e.target.checked;
         if (enabled && !bot.personality && !bot.scenario) {
-          if (!confirm(`O bot "${bot.name}" não tem personalidade nem cenário. Vai responder genérico. Continuar?`)) { e.target.checked = false; return; }
+          if (!confirm(`O bot "${bot.name}" não tem personalidade nem cenário. Continuar?`)) { e.target.checked = false; return; }
         }
         updateBot(bot.id, { autoMode: enabled });
       };
@@ -1810,15 +1873,22 @@ function renderBotsList() {
       if (avatarFile) avatarFile.onchange = async (e) => {
         const file = e.target.files?.[0]; e.target.value = '';
         if (!file) return;
-        try { const dataUrl = await fileToResizedDataUrl(file, 128, 0.8); if (dataUrl.length > AVATAR_MAX_BYTES) return alert(`Imagem muito grande: ${(dataUrl.length/1024).toFixed(0)}KB`); updateBot(bot.id, { avatar: dataUrl }); }
-        catch (err) { alert('Erro: ' + (err?.message || err)); }
+        try {
+          /* === NOVO: usa AVATAR_SIZE = 256px === */
+          const dataUrl = await fileToResizedDataUrl(file, AVATAR_SIZE, AVATAR_QUALITY);
+          if (dataUrl.length > AVATAR_MAX_BYTES) return alert(`Imagem muito grande: ${(dataUrl.length/1024).toFixed(0)}KB`);
+          updateBot(bot.id, { avatar: dataUrl });
+        } catch (err) { alert('Erro: ' + (err?.message || err)); }
       };
       const removeAvatarBtn = row.querySelector('.remove-avatar');
       if (removeAvatarBtn) removeAvatarBtn.onclick = () => { if (!confirm(`Remover avatar?`)) return; updateBot(bot.id, { avatar: '' }); };
     }
 
-    /* ⚠️ CORREÇÃO: teste inline, sem alert */
     row.querySelector('.test-ai-btn').onclick = () => testBotAI(bot);
+
+    /* === NOVO: botão "Ver em alta" === */
+    const viewBtn = row.querySelector('.view-avatar-btn');
+    if (viewBtn) viewBtn.onclick = () => showBotAvatar(bot.id);
 
     const speakBtn = row.querySelector('.speak-btn');
     if (canSpeakAsBot) speakBtn.onclick = () => { $('settingsModal').style.display = 'none'; $('targetSelect').value = bot.id; S._speakAsBot = true; $('speakAsBotCheck').checked = true; updateSpeakAsBotVisibility(); $('messageInput').focus(); };
@@ -1938,7 +2008,6 @@ $('leaveBtn').onclick = () => {
   if (S.isHost) { if (!confirm('Sair? O histórico fica salvo.')) return; broadcastAll({ type: 'kick', reason: 'O operador saiu.', temporary: true }); }
   S.peer?.destroy(); setTimeout(() => location.reload(), 200);
 };
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('settingsModal').style.display = 'none'; });
 
 async function initResume() {
   try { await getDB(); } catch { return; }
