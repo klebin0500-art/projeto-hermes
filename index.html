@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<!-- BUILD: v13 — Projeto Hermes + Lightbox de avatar -->
+<!-- BUILD: v14 — Projeto Hermes + enquadramento e qualidade original -->
 <title>Projeto Hermes</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -109,16 +109,18 @@
 
   /* === AVATARES CLICÁVEIS === */
   .bot-avatar-img {
-    width: 16px; height: 16px; border-radius: 50%; object-fit: cover;
+    width: 16px; height: 16px; border-radius: 50%;
+    object-fit: cover;
     vertical-align: middle; border: 1px solid rgba(255,255,255,0.15);
     display: inline-block; flex-shrink: 0;
     cursor: pointer;
-    transition: transform 0.15s, border-color 0.15s;
+    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+    background: #141415;
   }
   .bot-avatar-img:hover {
-    transform: scale(1.2);
+    transform: scale(1.25);
     border-color: #5865f2;
-    box-shadow: 0 0 8px rgba(88, 101, 242, 0.5);
+    box-shadow: 0 0 8px rgba(88, 101, 242, 0.6);
   }
 
   .input-area { padding: 12px; border-top: 1px solid #2a2a2e; transition: background 0.2s; background: #17181b; }
@@ -180,7 +182,7 @@
 
   .bot-avatar-picker { width: 44px; height: 44px; border-radius: 50%; background: #141415; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid #333; overflow: hidden; flex: 0 0 44px; font-size: 22px; position: relative; transition: border-color 0.15s; }
   .bot-avatar-picker:hover { border-color: #5865f2; }
-  .bot-avatar-picker img { width: 100%; height: 100%; object-fit: cover; }
+  .bot-avatar-picker img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
   .bot-avatar-picker.disabled { cursor: default; opacity: 0.6; }
   .bot-avatar-picker.disabled:hover { border-color: #333; }
 
@@ -233,13 +235,48 @@
   .mention-chip { background: #2a2a2e; border: 1px solid #3a3a3f; color: #8eb4ff; padding: 3px 8px; border-radius: 10px; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
   .mention-chip:hover { background: #3a3a3f; }
   .mention-chip.ai { border-color: #16a34a; color: #a7d4a0; }
-  .mention-avatar { width: 12px; height: 12px; border-radius: 50%; object-fit: cover; }
+  .mention-avatar { width: 12px; height: 12px; border-radius: 50%; object-fit: cover; background: #141415; }
 
   .help-box { background: #0f1f33; border: 1px solid #2a4a6f; border-radius: 6px; padding: 10px 12px; margin: 10px 0; font-size: 12px; line-height: 1.6; color: #b8c8dd; }
   .help-box code { background: #0a0a0b; padding: 1px 5px; border-radius: 3px; color: #8eb4ff; font-family: ui-monospace, monospace; font-size: 11px; }
   .help-box a { color: #8eb4ff; }
 
-  /* === LIGHTBOX DE AVATAR === */
+  /* === CROP MODAL === */
+  .crop-card { max-width: 360px; text-align: center; }
+  .crop-card h2 { margin: 0 0 6px; }
+  .crop-card p { color: #888; font-size: 12px; line-height: 1.5; margin: 0 0 16px; }
+  .crop-viewport {
+    width: 240px; height: 240px;
+    border-radius: 50%;
+    overflow: hidden;
+    position: relative;
+    background: #000;
+    margin: 0 auto 16px;
+    cursor: grab;
+    border: 3px solid #2a2a2e;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    touch-action: none;
+    user-select: none;
+  }
+  .crop-viewport:active { cursor: grabbing; }
+  .crop-viewport::after {
+    content: '';
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1);
+    pointer-events: none;
+  }
+  .crop-viewport img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    object-position: 50% 50%;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    display: block;
+  }
+
+  /* === LIGHTBOX === */
   .avatar-lightbox {
     position: fixed; inset: 0; z-index: 300;
     display: flex; align-items: center; justify-content: center;
@@ -248,9 +285,9 @@
   }
   .avatar-lightbox-backdrop {
     position: absolute; inset: 0;
-    background: rgba(0,0,0,0.88);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    background: rgba(0,0,0,0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     cursor: zoom-out;
   }
   .avatar-lightbox-content {
@@ -259,10 +296,11 @@
     border: 1px solid #2a2a2e;
     border-radius: 16px;
     padding: 20px;
-    max-width: 400px;
-    width: 100%;
+    max-width: 94vw;
+    max-height: 94vh;
+    overflow-y: auto;
     text-align: center;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7);
     animation: zoomIn 0.2s ease;
   }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -274,41 +312,66 @@
     font-size: 16px; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     transition: all 0.15s;
+    z-index: 2;
   }
   .avatar-lightbox-close:hover { background: #b91c1c; color: white; border-color: #b91c1c; }
   .avatar-lightbox-content img {
-    width: 256px; height: 256px;
-    max-width: 80vw; max-height: 60vh;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 4px solid #2a2a2e;
-    margin: 8px auto 16px;
+    max-width: 86vw;
+    max-height: 62vh;
+    width: auto;
+    height: auto;
     display: block;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    margin: 8px auto 16px;
+    border-radius: 10px;
+    border: 2px solid #2a2a2e;
+    background: #000;
+    object-fit: contain;
     image-rendering: -webkit-optimize-contrast;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
   }
-  .avatar-lightbox-content img.loading { opacity: 0.5; }
   .avatar-lightbox-content h3 {
-    margin: 0 0 8px;
+    margin: 0 0 6px;
     font-size: 20px;
     font-weight: 700;
     word-break: break-word;
   }
   .avatar-lightbox-content p {
-    margin: 0;
+    margin: 0 0 4px;
     color: #aaa;
     font-size: 13px;
     line-height: 1.5;
     word-break: break-word;
   }
   .avatar-lightbox-content p.empty-desc { display: none; }
+  .avatar-lightbox-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #2a2a2e;
+    color: #888;
+    font-size: 12px;
+  }
+  .preview-circle {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: 50% 50%;
+    background-repeat: no-repeat;
+    border: 2px solid #2a2a2e;
+    background-color: #141415;
+    flex-shrink: 0;
+  }
 
   @media (max-width: 900px) {
     #app { grid-template-columns: 1fr; }
     .sidebar { display: none; }
     #pendingPanel { position: fixed; right: 0; top: 0; bottom: 0; z-index: 50; box-shadow: -4px 0 20px rgba(0,0,0,0.5); width: 90vw; max-width: 400px; }
-    .avatar-lightbox-content img { width: 200px; height: 200px; }
+    .avatar-lightbox-content img { max-width: 90vw; max-height: 55vh; }
     .avatar-lightbox-content h3 { font-size: 17px; }
+    .crop-viewport { width: 200px; height: 200px; }
   }
 </style>
 </head>
@@ -423,7 +486,6 @@
 <div id="settingsModal" class="modal" style="display:none">
   <div class="modal-card">
     <h2>Configurações</h2>
-
     <div class="settings-tabs">
       <button class="stab active" data-stab="general">Geral</button>
       <button class="stab" data-stab="invite">Convite</button>
@@ -437,7 +499,6 @@
       <label>Nome da sala</label>
       <input id="setRoomName" maxlength="40">
       <label><input type="checkbox" id="setFreeChat"> Permitir que usuários conversem livremente</label>
-
       <label>Background da sala</label>
       <div class="bg-picker-row">
         <div id="bgPreview" class="bg-preview">sem imagem</div>
@@ -453,9 +514,6 @@
 
     <div id="stab-invite" class="stab-content" style="display:none">
       <h3>Código de convite</h3>
-      <p style="font-size:12px; color:#888; margin:0 0 12px; line-height:1.5">
-        O código é <b>fixo até ser renovado manualmente</b>. Renovar invalida o código atual imediatamente.
-      </p>
       <div class="invite-box">
         <div class="ib-label">Código atual</div>
         <div id="inviteCodeDisplay" class="ib-code">—</div>
@@ -469,7 +527,7 @@
 
     <div id="stab-bots" class="stab-content" style="display:none">
       <div class="help-box">
-        💡 Cada bot tem uma "ficha" (personalidade, cenário, exemplos). Com <b>IA Automática ligada</b>, ele responde sozinho usando a API gratuita do <a href="https://pollinations.ai" target="_blank">Pollinations</a>. Clique em qualquer avatar no chat para ver em tamanho grande.
+        💡 Clique no avatar para <b>enviar e enquadrar</b> uma imagem (arraste dentro do círculo). Clique novamente com botão direito ou em "Reposicionar" para ajustar. No chat, qualquer avatar abre a imagem em tamanho grande.
       </div>
       <div id="botsList"></div>
       <div class="add-bot-row">
@@ -478,16 +536,8 @@
       </div>
     </div>
 
-    <div id="stab-users" class="stab-content" style="display:none">
-      <h3>Usuários & Cargos</h3>
-      <div id="usersAdminList"></div>
-    </div>
-
-    <div id="stab-bans" class="stab-content" style="display:none">
-      <h3>Usuários banidos</h3>
-      <div id="bansList"></div>
-    </div>
-
+    <div id="stab-users" class="stab-content" style="display:none"><h3>Usuários & Cargos</h3><div id="usersAdminList"></div></div>
+    <div id="stab-bans" class="stab-content" style="display:none"><h3>Usuários banidos</h3><div id="bansList"></div></div>
     <div id="stab-history" class="stab-content" style="display:none">
       <h3>Histórico</h3>
       <button id="exportBtn" class="secondary" style="width:100%; margin-bottom:8px">📥 Exportar histórico (JSON)</button>
@@ -506,20 +556,39 @@
   </div>
 </div>
 
-<!-- === LIGHTBOX DE AVATAR === -->
+<!-- LIGHTBOX DE AVATAR -->
 <div id="avatarLightbox" class="avatar-lightbox" style="display:none">
   <div class="avatar-lightbox-backdrop" id="avatarLightboxBackdrop"></div>
   <div class="avatar-lightbox-content">
     <button class="avatar-lightbox-close" id="avatarLightboxClose" title="Fechar (Esc)">✕</button>
-    <img id="avatarLightboxImg" src="" alt="Avatar do bot">
+    <img id="avatarLightboxImg" src="" alt="">
     <h3 id="avatarLightboxName"></h3>
     <p id="avatarLightboxDesc"></p>
+    <div class="avatar-lightbox-preview">
+      <div class="preview-circle" id="avatarLightboxCircle"></div>
+      <span>Como aparece no chat</span>
+    </div>
+  </div>
+</div>
+
+<!-- CROP MODAL -->
+<div id="cropModal" class="modal" style="display:none">
+  <div class="modal-card crop-card">
+    <h2>Enquadrar avatar</h2>
+    <p>Arraste a imagem para escolher qual parte fica dentro do círculo. É assim que vai aparecer no chat.</p>
+    <div id="cropViewport" class="crop-viewport">
+      <img id="cropImage" src="" alt="">
+    </div>
+    <div class="modal-actions">
+      <button id="cropCancelBtn" class="secondary">Cancelar</button>
+      <button id="cropSaveBtn" class="primary">Salvar</button>
+    </div>
   </div>
 </div>
 
 <script>
 /* ============================================================
-   PROJETO HERMES v13 — lightbox de avatar
+   PROJETO HERMES v14 — enquadramento de avatar + qualidade original
    ============================================================ */
 
 const $ = (id) => document.getElementById(id);
@@ -561,36 +630,53 @@ function getDeviceId() {
   } catch { return uuid(); }
 }
 
-/* === NOVO: AVATAR_SIZE aumentado para 256px (era 128) === */
-const AVATAR_SIZE = 256;
-const AVATAR_QUALITY = 0.82;
+/* === CONFIG DE AVATAR === */
+const AVATAR_THUMB_SIZE = 256;
+const AVATAR_THUMB_QUALITY = 0.85;
+const AVATAR_FULL_MAX = 2048;
+const AVATAR_FULL_QUALITY = 0.92;
+const AVATAR_THUMB_MAX_BYTES = 400000;      // thumbnail nunca deve passar disso
+const AVATAR_FULL_WARN_BYTES = 800000;      // aviso acima de ~800KB
+const AVATAR_FULL_REJECT_BYTES = 2500000;   // rejeita acima de ~2.5MB
 
-function fileToResizedDataUrl(file, maxSize = AVATAR_SIZE, quality = AVATAR_QUALITY) {
+/* Processa um File, dataURL ou Image em um dataURL redimensionado */
+function resizeImage(source, maxSize = 256, quality = 0.85) {
   return new Promise((resolve, reject) => {
-    if (!file || !file.type.startsWith('image/')) return reject(new Error('Não é uma imagem'));
-    const reader = new FileReader();
-    reader.onerror = () => reject(reader.error);
-    reader.onload = () => {
+    const processImg = (img) => {
+      try {
+        const canvas = document.createElement('canvas');
+        let w = img.naturalWidth || img.width;
+        let h = img.naturalHeight || img.height;
+        if (!w || !h) return reject(new Error('Dimensões inválidas'));
+        if (w >= h && w > maxSize) { h = Math.round(h * maxSize / w); w = maxSize; }
+        else if (h > w && h > maxSize) { w = Math.round(w * maxSize / h); h = maxSize; }
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      } catch (err) { reject(err); }
+    };
+
+    if (source instanceof File) {
+      if (!source.type.startsWith('image/')) return reject(new Error('Não é uma imagem'));
+      const reader = new FileReader();
+      reader.onerror = () => reject(reader.error);
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('Falha ao carregar imagem'));
+        img.onload = () => processImg(img);
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(source);
+    } else if (typeof source === 'string' && source.startsWith('data:')) {
       const img = new Image();
       img.onerror = () => reject(new Error('Falha ao carregar imagem'));
-      img.onload = () => {
-        try {
-          const canvas = document.createElement('canvas');
-          let w = img.naturalWidth || img.width;
-          let h = img.naturalHeight || img.height;
-          if (!w || !h) return reject(new Error('Dimensões inválidas'));
-          if (w >= h && w > maxSize) { h = Math.round(h * maxSize / w); w = maxSize; }
-          else if (h > w && h > maxSize) { w = Math.round(w * maxSize / h); h = maxSize; }
-          canvas.width = w; canvas.height = h;
-          const ctx = canvas.getContext('2d');
-          ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(img, 0, 0, w, h);
-          resolve(canvas.toDataURL('image/jpeg', quality));
-        } catch (err) { reject(err); }
-      };
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
+      img.onload = () => processImg(img);
+      img.src = source;
+    } else {
+      reject(new Error('Fonte inválida'));
+    }
   });
 }
 
@@ -599,34 +685,32 @@ const MAX_BOTS = 20;
 const MAX_MSG_HISTORY = 10000;
 const RATE_LIMIT_MS = 800;
 const TYPING_TIMEOUT_MS = 2500;
-const AVATAR_MAX_BYTES = 400000;
 const BG_MAX_BYTES = 500000;
 const AI_TIMEOUT_MS = 60000;
 
 const PERMS = {
-  kickUsers:      'Expulsar usuários',
-  banUsers:       'Banir / desbanir usuários',
-  muteUsers:      'Silenciar usuários',
-  deleteMessages: 'Apagar mensagens',
-  manageSettings: 'Alterar nome, chat livre e background',
-  manageBots:     'Editar bots e avatares',
-  manageRelay:    'Gerenciar fila de relay',
-  manageHistory:  'Exportar / limpar histórico',
-  shareInvite:    'Compartilhar e renovar código de convite'
+  kickUsers: 'Expulsar usuários', banUsers: 'Banir/desbanir', muteUsers: 'Silenciar',
+  deleteMessages: 'Apagar mensagens', manageSettings: 'Nome, chat livre e background',
+  manageBots: 'Editar bots e avatares', manageRelay: 'Gerenciar fila de relay',
+  manageHistory: 'Exportar/limpar histórico', shareInvite: 'Compartilhar código de convite'
 };
 
 const AI_MODELS = [
-  { value: 'openai',       label: 'OpenAI (padrão)' },
-  { value: 'openai-fast',  label: 'OpenAI Fast (rápido)' },
+  { value: 'openai', label: 'OpenAI (padrão)' },
+  { value: 'openai-fast', label: 'OpenAI Fast (rápido)' },
   { value: 'openai-large', label: 'OpenAI Large (melhor)' },
-  { value: 'mistral',      label: 'Mistral' },
-  { value: 'llama',        label: 'Llama' },
-  { value: 'deepseek',     label: 'DeepSeek' }
+  { value: 'mistral', label: 'Mistral' },
+  { value: 'llama', label: 'Llama' },
+  { value: 'deepseek', label: 'DeepSeek' }
 ];
 
 function makeBot(name = 'Novo Bot', opts = {}) {
   return {
-    id: uuid(), name, emoji: '🤖', color: '#5865f2', avatar: '',
+    id: uuid(), name, emoji: '🤖', color: '#5865f2',
+    avatar: '',           /* thumbnail pequena (256px) para o chat */
+    avatarFull: '',       /* alta qualidade (até 2048px) para o lightbox */
+    avatarFocusX: 50,     /* 0-100: posição horizontal do enquadramento */
+    avatarFocusY: 50,     /* 0-100: posição vertical do enquadramento */
     description: '', greeting: '', online: true,
     adminOnly: false, maxPending: 3,
     personality: '', scenario: '', examples: '',
@@ -635,6 +719,9 @@ function makeBot(name = 'Novo Bot', opts = {}) {
   };
 }
 
+/* ============================================================
+   PERSISTÊNCIA
+   ============================================================ */
 const DB_NAME = 'relaychat';
 const DB_VERSION = 1;
 let _db = null;
@@ -648,8 +735,7 @@ function getDB() {
       if (!db.objectStoreNames.contains('rooms')) db.createObjectStore('rooms', { keyPath: 'code' });
       if (!db.objectStoreNames.contains('messages')) {
         const s = db.createObjectStore('messages', { keyPath: 'id' });
-        s.createIndex('roomCode', 'roomCode');
-        s.createIndex('ts', 'ts');
+        s.createIndex('roomCode', 'roomCode'); s.createIndex('ts', 'ts');
       }
       if (!db.objectStoreNames.contains('pending')) {
         const s = db.createObjectStore('pending', { keyPath: 'id' });
@@ -755,21 +841,10 @@ function persistPending() {
 const S = {
   peer: null, conns: new Map(), isHost: false, code: null, myName: '',
   users: new Map(), messages: [], pending: new Map(),
-  settings: {
-    roomName: 'Projeto Hermes',
-    bots: [makeBot('Bot A'), makeBot('Bot B')],
-    allowFreeChat: true,
-    background: ''
-  },
-  _createdAt: null,
-  _adminNames: new Map(),
-  _bans: [],
-  _resumeTokens: new Map(),
-  _rateLimit: new Map(),
-  _typingTimers: new Map(),
-  _speakAsBot: false,
-  _inviteToken: '',
-  _botThinking: new Map()
+  settings: { roomName: 'Projeto Hermes', bots: [makeBot('Bot A'), makeBot('Bot B')], allowFreeChat: true, background: '' },
+  _createdAt: null, _adminNames: new Map(), _bans: [], _resumeTokens: new Map(),
+  _rateLimit: new Map(), _typingTimers: new Map(),
+  _speakAsBot: false, _inviteToken: '', _botThinking: new Map()
 };
 
 function me() { return S.users.get(S.peer?.id); }
@@ -787,13 +862,20 @@ function findBot(idOrName) {
 }
 function getBotVisual(botId, fallbackEmoji, fallbackColor) {
   const bot = botId ? findBot(botId) : null;
-  return { avatar: bot?.avatar || '', emoji: bot?.emoji || fallbackEmoji || '🤖', color: bot?.color || fallbackColor || '#5865f2' };
+  return {
+    avatar: bot?.avatar || '',
+    emoji: bot?.emoji || fallbackEmoji || '🤖',
+    color: bot?.color || fallbackColor || '#5865f2',
+    focusX: bot?.avatarFocusX ?? 50,
+    focusY: bot?.avatarFocusY ?? 50
+  };
 }
+function avatarStyle(focusX, focusY) { return `object-position: ${focusX}% ${focusY}%`; }
+
 function uniqueName(base, existing) {
   base = base.trim() || 'Anônimo';
   if (!existing.includes(base)) return base;
-  let i = 2;
-  while (existing.includes(base + ' (' + i + ')')) i++;
+  let i = 2; while (existing.includes(base + ' (' + i + ')')) i++;
   return base + ' (' + i + ')';
 }
 function findUserByDevice(deviceId) {
@@ -813,11 +895,7 @@ function isValidInviteToken(token) { return !!(token && S._inviteToken && String
 let _audioCtx = null;
 let _soundEnabled = localStorage.getItem('relaychat_sound') !== 'off';
 function updateSoundBtn() { const b = $('soundToggleBtn'); if (b) b.textContent = _soundEnabled ? '🔔' : '🔕'; }
-$('soundToggleBtn').onclick = () => {
-  _soundEnabled = !_soundEnabled;
-  localStorage.setItem('relaychat_sound', _soundEnabled ? 'on' : 'off');
-  updateSoundBtn();
-};
+$('soundToggleBtn').onclick = () => { _soundEnabled = !_soundEnabled; localStorage.setItem('relaychat_sound', _soundEnabled ? 'on' : 'off'); updateSoundBtn(); };
 updateSoundBtn();
 function beep(freq = 880, dur = 0.08, vol = 0.05) {
   if (!_soundEnabled) return;
@@ -831,36 +909,136 @@ function beep(freq = 880, dur = 0.08, vol = 0.05) {
 }
 
 /* ============================================================
+   CROP MODAL — enquadramento
+   ============================================================ */
+const _cropState = { botId: null, imageDataUrl: null, focusX: 50, focusY: 50, dragging: false, startX: 0, startY: 0, startFocusX: 50, startFocusY: 50 };
+
+function openCropModal(botId, imageDataUrl) {
+  const bot = findBot(botId);
+  if (!bot) return;
+  _cropState.botId = botId;
+  _cropState.imageDataUrl = imageDataUrl;
+  _cropState.focusX = bot.avatarFocusX ?? 50;
+  _cropState.focusY = bot.avatarFocusY ?? 50;
+  _cropState.dragging = false;
+  $('cropImage').src = imageDataUrl;
+  updateCropPreview();
+  $('cropModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function updateCropPreview() {
+  const img = $('cropImage'); if (!img) return;
+  img.style.objectPosition = `${_cropState.focusX}% ${_cropState.focusY}%`;
+}
+function closeCropModal() {
+  $('cropModal').style.display = 'none';
+  document.body.style.overflow = '';
+  _cropState.botId = null; _cropState.imageDataUrl = null; _cropState.dragging = false;
+}
+
+(function setupCropDrag() {
+  const viewport = $('cropViewport');
+  const start = (clientX, clientY) => {
+    _cropState.dragging = true;
+    _cropState.startX = clientX;
+    _cropState.startY = clientY;
+    _cropState.startFocusX = _cropState.focusX;
+    _cropState.startFocusY = _cropState.focusY;
+  };
+  const move = (clientX, clientY) => {
+    if (!_cropState.dragging) return;
+    const rect = viewport.getBoundingClientRect();
+    const dx = clientX - _cropState.startX;
+    const dy = clientY - _cropState.startY;
+    _cropState.focusX = Math.max(0, Math.min(100, _cropState.startFocusX - (dx / rect.width) * 100));
+    _cropState.focusY = Math.max(0, Math.min(100, _cropState.startFocusY - (dy / rect.height) * 100));
+    updateCropPreview();
+  };
+  const end = () => { _cropState.dragging = false; };
+
+  viewport.addEventListener('mousedown', (e) => { e.preventDefault(); start(e.clientX, e.clientY); });
+  window.addEventListener('mousemove', (e) => { if (_cropState.dragging) move(e.clientX, e.clientY); });
+  window.addEventListener('mouseup', end);
+  viewport.addEventListener('touchstart', (e) => { if (e.touches.length === 1) { start(e.touches[0].clientX, e.touches[0].clientY); } }, { passive: true });
+  window.addEventListener('touchmove', (e) => { if (_cropState.dragging && e.touches.length === 1) move(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+  window.addEventListener('touchend', end);
+})();
+
+$('cropCancelBtn').onclick = closeCropModal;
+
+$('cropSaveBtn').onclick = async () => {
+  if (!_cropState.botId || !_cropState.imageDataUrl) return;
+  const botId = _cropState.botId;
+  const src = _cropState.imageDataUrl;
+  const focusX = Math.round(_cropState.focusX);
+  const focusY = Math.round(_cropState.focusY);
+
+  $('cropSaveBtn').disabled = true;
+  $('cropSaveBtn').textContent = 'Processando...';
+
+  try {
+    const thumb = await resizeImage(src, AVATAR_THUMB_SIZE, AVATAR_THUMB_QUALITY);
+    const full = await resizeImage(src, AVATAR_FULL_MAX, AVATAR_FULL_QUALITY);
+
+    if (thumb.length > AVATAR_THUMB_MAX_BYTES) {
+      alert(`Thumbnail muito grande (${(thumb.length/1024).toFixed(0)}KB). Escolha uma imagem mais simples.`);
+      return;
+    }
+    if (full.length > AVATAR_FULL_REJECT_BYTES) {
+      alert(`Imagem ficou com ${(full.length/1024/1024).toFixed(1)}MB após processar.\n\nMáximo: ${(AVATAR_FULL_REJECT_BYTES/1024/1024).toFixed(1)}MB.\nEscolha uma imagem menor.`);
+      return;
+    }
+    if (full.length > AVATAR_FULL_WARN_BYTES) {
+      if (!confirm(`A imagem de alta qualidade ficou com ${(full.length/1024).toFixed(0)}KB.\n\nIsso pode deixar a sincronização mais lenta. Continuar?`)) return;
+    }
+
+    updateBot(botId, {
+      avatar: thumb,
+      avatarFull: full,
+      avatarFocusX: focusX,
+      avatarFocusY: focusY
+    });
+    closeCropModal();
+  } catch (err) {
+    alert('Erro ao processar: ' + (err?.message || err));
+  } finally {
+    $('cropSaveBtn').disabled = false;
+    $('cropSaveBtn').textContent = 'Salvar';
+  }
+};
+
+/* ============================================================
    LIGHTBOX DE AVATAR
    ============================================================ */
 function showBotAvatar(botId) {
   const bot = findBot(botId);
-  if (!bot || !bot.avatar) return;
-  const lb = $('avatarLightbox');
-  const img = $('avatarLightboxImg');
+  if (!bot) return;
+  const img = bot.avatarFull || bot.avatar;
+  if (!img) return;
+
+  const lbImg = $('avatarLightboxImg');
+  lbImg.src = img;
+  lbImg.alt = bot.name;
+
   const nameEl = $('avatarLightboxName');
-  const descEl = $('avatarLightboxDesc');
-
-  img.classList.add('loading');
-  img.src = bot.avatar;
-  img.onload = () => img.classList.remove('loading');
-  img.onerror = () => img.classList.remove('loading');
-
   nameEl.textContent = bot.name;
   nameEl.style.color = bot.color || '#8eb4ff';
 
-  if (bot.description) {
-    descEl.textContent = bot.description;
-    descEl.classList.remove('empty-desc');
-  } else {
-    descEl.classList.add('empty-desc');
+  const descEl = $('avatarLightboxDesc');
+  if (bot.description) { descEl.textContent = bot.description; descEl.classList.remove('empty-desc'); }
+  else { descEl.classList.add('empty-desc'); }
+
+  /* Preview circular (como aparece no chat) */
+  const circle = $('avatarLightboxCircle');
+  if (circle) {
+    circle.style.backgroundImage = `url("${img}")`;
+    const fx = bot.avatarFocusX ?? 50;
+    const fy = bot.avatarFocusY ?? 50;
+    circle.style.backgroundPosition = `${fx}% ${fy}%`;
   }
 
-  lb.style.display = 'flex';
+  $('avatarLightbox').style.display = 'flex';
   document.body.style.overflow = 'hidden';
-
-  /* Limpa a imagem quando fechar pra não ficar na memória */
-  lb._closeHandler = () => { img.src = ''; };
 }
 
 function closeAvatarLightbox() {
@@ -868,9 +1046,7 @@ function closeAvatarLightbox() {
   if (lb.style.display === 'none') return;
   lb.style.display = 'none';
   document.body.style.overflow = '';
-  if (typeof lb._closeHandler === 'function') {
-    try { lb._closeHandler(); } catch {}
-  }
+  $('avatarLightboxImg').src = '';
 }
 
 $('avatarLightboxClose').onclick = closeAvatarLightbox;
@@ -879,28 +1055,25 @@ $('avatarLightboxBackdrop').onclick = closeAvatarLightbox;
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if ($('avatarLightbox').style.display !== 'none') { e.preventDefault(); closeAvatarLightbox(); return; }
+    if ($('cropModal').style.display !== 'none') { e.preventDefault(); closeCropModal(); return; }
     if ($('settingsModal').style.display !== 'none') $('settingsModal').style.display = 'none';
   }
 });
 
-/* Delegação global: qualquer .bot-avatar-img clicada abre o lightbox */
 document.addEventListener('click', (e) => {
   const img = e.target.closest('.bot-avatar-img');
-  if (img && img.dataset.botId) {
-    e.stopPropagation();
-    showBotAvatar(img.dataset.botId);
-  }
+  if (img && img.dataset.botId) { e.stopPropagation(); showBotAvatar(img.dataset.botId); }
 });
 
 /* ============================================================
    IA — Pollinations
    ============================================================ */
 function buildSystemPrompt(bot) {
-  let p = `Você é "${bot.name}", um personagem em um RPG interativo multiplayer. Você NUNCA deve sair do personagem. NUNCA diga que é uma IA. Responda sempre em português brasileiro, na primeira pessoa.\n\nRegras:\n- Ações/descrições entre asteriscos (ex: *sorri e cruza os braços*)\n- Diálogos sem asteriscos\n- Seja imersivo, reaja ao contexto, mantenha a coerência`;
-  if (bot.description) p += `\n\nDESCRIÇÃO CURTA:\n${bot.description}`;
+  let p = `Você é "${bot.name}", um personagem em um RPG interativo multiplayer. NUNCA saia do personagem. NUNCA diga que é uma IA. Responda sempre em português brasileiro, na primeira pessoa.\n\nRegras:\n- Ações/descrições entre asteriscos (ex: *sorri*)\n- Diálogos sem asteriscos\n- Seja imersivo, reaja ao contexto, mantenha a coerência`;
+  if (bot.description) p += `\n\nDESCRIÇÃO:\n${bot.description}`;
   if (bot.personality) p += `\n\nPERSONALIDADE:\n${bot.personality}`;
   if (bot.scenario) p += `\n\nCENÁRIO:\n${bot.scenario}`;
-  if (bot.examples) p += `\n\nEXEMPLOS DE DIÁLOGO:\n${bot.examples}`;
+  if (bot.examples) p += `\n\nEXEMPLOS:\n${bot.examples}`;
   return p;
 }
 function getConversationHistory(botId, userId, limit = 20) {
@@ -934,7 +1107,6 @@ async function callPollinationsAI(bot, history, userText, userName, retries = 2)
       if (!content || !content.trim()) throw new Error('Resposta vazia');
       return content.trim();
     } catch (e) {
-      console.warn(`[Hermes] Tentativa ${attempt + 1} falhou:`, e.message);
       if (attempt === retries) throw e;
       await new Promise(r => setTimeout(r, 1200 * (attempt + 1)));
     }
@@ -951,11 +1123,8 @@ async function testBotAI(bot) {
     if (resultEl) { resultEl.className = 'ai-test-result success show'; resultEl.innerHTML = `<strong>✅ Resposta:</strong>\n\n${escapeHtml(reply)}`; }
   } catch (e) {
     if (statusEl) { statusEl.textContent = '❌ falhou'; statusEl.className = 'ai-status off'; }
-    if (resultEl) { resultEl.className = 'ai-test-result error show'; resultEl.innerHTML = `<strong>❌ Falha:</strong> ${escapeHtml(e.message)}\n\nDicas:\n• Verifique a internet\n• Tente em 10s\n• Troque o modelo`; }
-    setTimeout(() => {
-      const cur = findBot(bot.id);
-      if (statusEl && cur) { statusEl.textContent = cur.autoMode ? '🤖 IA' : 'manual'; statusEl.className = 'ai-status ' + (cur.autoMode ? '' : 'off'); }
-    }, 5000);
+    if (resultEl) { resultEl.className = 'ai-test-result error show'; resultEl.innerHTML = `<strong>❌ Falha:</strong> ${escapeHtml(e.message)}\n\nTente em 10s ou troque o modelo`; }
+    setTimeout(() => { const cur = findBot(bot.id); if (statusEl && cur) { statusEl.textContent = cur.autoMode ? '🤖 IA' : 'manual'; statusEl.className = 'ai-status ' + (cur.autoMode ? '' : 'off'); } }, 5000);
   }
 }
 
@@ -969,18 +1138,15 @@ async function hostGenerateAndReply(peerId, user, bot, userText, originalMsgId) 
     const botMsg = {
       id: uuid(), type: 'bot', fromName: bot.name,
       botId: bot.id, botEmoji: bot.emoji, botColor: bot.color,
-      text: String(reply).slice(0, 4000),
-      ts: Date.now(), autoGenerated: true, spokenTo: peerId, replyToName: user.name
+      text: String(reply).slice(0, 4000), ts: Date.now(), autoGenerated: true,
+      spokenTo: peerId, replyToName: user.name
     };
-    addMessageLocal(botMsg);
-    broadcastAll({ type: 'chat', msg: botMsg });
+    addMessageLocal(botMsg); broadcastAll({ type: 'chat', msg: botMsg });
     if (originalMsgId) { const orig = S.messages.find(m => m.id === originalMsgId); if (orig) { delete orig.relayPending; persistMessage(orig); } }
     beep(1046, 0.08, 0.04);
   } catch (err) {
-    console.error('[Hermes] Erro na IA:', err);
     const sysMsg = { id: uuid(), type: 'system', warn: true, text: `⚠️ ${bot.name} não conseguiu responder (${err.message}). Tente em alguns segundos.`, ts: Date.now() };
-    addMessageLocal(sysMsg);
-    broadcastAll({ type: 'chat', msg: sysMsg });
+    addMessageLocal(sysMsg); broadcastAll({ type: 'chat', msg: sysMsg });
     if (originalMsgId) { const orig = S.messages.find(m => m.id === originalMsgId); if (orig) { delete orig.relayPending; persistMessage(orig); } }
   } finally {
     S._botThinking.delete(bot.id);
@@ -990,12 +1156,9 @@ async function hostGenerateAndReply(peerId, user, bot, userText, originalMsgId) 
 }
 
 /* ============================================================
-   SETUP SCREEN
+   SETUP
    ============================================================ */
-function showScreen(name) {
-  $('setup').style.display = name === 'setup' ? 'flex' : 'none';
-  $('app').style.display = name === 'app' ? 'grid' : 'none';
-}
+function showScreen(name) { $('setup').style.display = name === 'setup' ? 'flex' : 'none'; $('app').style.display = name === 'app' ? 'grid' : 'none'; }
 function safeCopy(text) {
   if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).catch(() => prompt('Copie:', text));
   else prompt('Copie:', text);
@@ -1013,10 +1176,7 @@ document.querySelectorAll('.tab').forEach(tab => {
 const savedName = localStorage.getItem('relaychat_name') || '';
 $('createName').value = savedName; $('joinName').value = savedName;
 const hash = location.hash.replace('#', '').toUpperCase().trim();
-if (hash) {
-  const parsed = parseInviteCode(hash);
-  if (parsed) { $('joinCode').value = hash; document.querySelector('[data-tab="join"]').click(); }
-}
+if (hash) { const parsed = parseInviteCode(hash); if (parsed) { $('joinCode').value = hash; document.querySelector('[data-tab="join"]').click(); } }
 
 $('createBtn').onclick = async () => {
   const name = $('createName').value.trim();
@@ -1027,8 +1187,8 @@ $('createBtn').onclick = async () => {
 $('joinBtn').onclick = async () => {
   const parsed = parseInviteCode($('joinCode').value);
   const name = $('joinName').value.trim();
-  if (!parsed) return alert('Formato inválido. Use ABC123-XY7K9P');
-  if (!parsed.token) return alert('Código incompleto. Peça o código completo.');
+  if (!parsed) return alert('Formato inválido.');
+  if (!parsed.token) return alert('Código incompleto.');
   if (!name) return alert('Digite seu nome.');
   localStorage.setItem('relaychat_name', name);
   await getDB();
@@ -1046,10 +1206,8 @@ async function createRoom(name, code) {
     S.users.set(peer.id, { id: peer.id, name, role: 'operator', perms: {}, deviceId: getDeviceId(), muted: false, online: true });
     location.hash = '';
     peer.on('connection', onHostNewConnection);
-    persistRoom();
-    persistKV('lastRoom', { code, name, role: 'operator' });
-    enterRoom();
-    addSystemMessageHost(`${name} criou a sala.`);
+    persistRoom(); persistKV('lastRoom', { code, name, role: 'operator' });
+    enterRoom(); addSystemMessageHost(`${name} criou a sala.`);
   });
   peer.on('error', (err) => {
     if (err.type === 'unavailable-id') { peer.destroy(); if (S.code === code) alert('Código em uso.'); else createRoom(name, genCode()); }
@@ -1155,13 +1313,12 @@ function hostHandleRelayRequest(peerId, data) {
     relayPending: 'pending-' + relayMsgId, relayBot: bot.name, relayBotId: bot.id,
     relayBotEmoji: bot.emoji, relayBotColor: bot.color
   };
-  addMessageLocal(relayMsg);
-  broadcastAll({ type: 'chat', msg: relayMsg });
+  addMessageLocal(relayMsg); broadcastAll({ type: 'chat', msg: relayMsg });
   clearTyping(peerId);
 
   if (bot.autoMode) {
     if (S._botThinking.get(bot.id)) {
-      sendSysWarn(peerId, `⏳ ${bot.name} ainda está pensando. Aguarde.`);
+      sendSysWarn(peerId, `⏳ ${bot.name} ainda está pensando.`);
       const orig = S.messages.find(m => m.id === relayMsgId);
       if (orig) { delete orig.relayPending; persistMessage(orig); }
       return;
@@ -1170,7 +1327,7 @@ function hostHandleRelayRequest(peerId, data) {
   } else {
     const botPending = [...S.pending.values()].filter(r => r.botId === bot.id).length;
     if (botPending >= bot.maxPending) {
-      sendSysWarn(peerId, `O bot "${bot.name}" já tem ${bot.maxPending} pedidos na fila manual.`);
+      sendSysWarn(peerId, `O bot "${bot.name}" já tem ${bot.maxPending} pedidos na fila.`);
       const orig = S.messages.find(m => m.id === relayMsgId);
       if (orig) { delete orig.relayPending; persistMessage(orig); }
       return;
@@ -1197,8 +1354,7 @@ function hostHandleSpeakAsBot(peerId, data) {
 }
 
 function checkRateLimit(peerId) {
-  const now = Date.now();
-  const last = S._rateLimit.get(peerId) || 0;
+  const now = Date.now(); const last = S._rateLimit.get(peerId) || 0;
   if (now - last < RATE_LIMIT_MS) return false;
   S._rateLimit.set(peerId, now); return true;
 }
@@ -1209,8 +1365,7 @@ function hostOnDisconnect(peerId) {
   let changed = false;
   for (const [id, r] of S.pending) if (r.userId === peerId) { S.pending.delete(id); const orig = S.messages.find(m => m.relayPending === id); if (orig) { delete orig.relayPending; persistMessage(orig); } changed = true; }
   if (changed) { persistPending(); broadcastAll({ type: 'pending-update', pending: [...S.pending.values()] }); }
-  persistRoom();
-  broadcastAll({ type: 'users-update', users: [...S.users.values()] });
+  persistRoom(); broadcastAll({ type: 'users-update', users: [...S.users.values()] });
   addSystemMessageHost(`${user.name} ficou offline.`);
   renderPending(); renderUsers(); renderMessages();
 }
@@ -1273,11 +1428,7 @@ function userOnData(data) {
     case 'pending-update':
       S.pending = new Map(data.pending.map(p => [p.id, p]));
       return updateRelayTags();
-    case 'delete-msg': {
-      const m = S.messages.find(x => x.id === data.msgId);
-      if (m) { m.deleted = true; persistMessage(m); }
-      return renderMessages();
-    }
+    case 'delete-msg': { const m = S.messages.find(x => x.id === data.msgId); if (m) { m.deleted = true; persistMessage(m); } return renderMessages(); }
     case 'clear-history':
       idbClearByRoom('messages', S.code).then(() => { S.messages = []; S.pending.clear(); renderMessages(); renderPending(); });
       return;
@@ -1297,17 +1448,14 @@ function userOnData(data) {
       setTimeout(() => location.reload(), 1500); return;
     case 'auth-rejected':
       deleteKV('lastRoom'); location.hash = '';
-      addSystemMessageLocal('❌ Não foi possível entrar: ' + (data.reason || 'inválido'));
+      addSystemMessageLocal('❌ ' + (data.reason || 'Código inválido'));
       setTimeout(() => location.reload(), 1500); return;
     case 'kick':
       addSystemMessageLocal('Você foi removido: ' + (data.reason || '—'));
       if (!data.temporary) deleteKV('lastRoom');
-      S.peer?.destroy();
-      setTimeout(() => location.reload(), 1500);
+      S.peer?.destroy(); setTimeout(() => location.reload(), 1500);
       return;
-    case 'error':
-      addSystemMessageLocal('⚠️ ' + (data.message || 'Erro'));
-      return;
+    case 'error': addSystemMessageLocal('⚠️ ' + (data.message || 'Erro')); return;
   }
 }
 
@@ -1324,6 +1472,8 @@ function serializeState(forPeerId) {
 
 async function applyWelcome(state) {
   S.settings = state.settings || S.settings;
+  /* Compat: garante campos novos em bots antigos */
+  S.settings.bots = (S.settings.bots || []).map(b => ({ ...makeBot(b.name || 'Bot'), ...b }));
   S.users = new Map((state.users || []).map(u => [u.id, u]));
   S.messages = state.messages || [];
   S.pending = new Map((state.pending || []).map(p => [p.id, p]));
@@ -1352,13 +1502,8 @@ function addMessageLocal(msg) {
   }
   renderMessages(); persistMessage(msg);
 }
-function addSystemMessageHost(text) {
-  const msg = { id: uuid(), type: 'system', text, ts: Date.now() };
-  addMessageLocal(msg); broadcastAll({ type: 'chat', msg });
-}
-function addSystemMessageLocal(text) {
-  addMessageLocal({ id: uuid(), type: 'system', text, ts: Date.now() });
-}
+function addSystemMessageHost(text) { const msg = { id: uuid(), type: 'system', text, ts: Date.now() }; addMessageLocal(msg); broadcastAll({ type: 'chat', msg }); }
+function addSystemMessageLocal(text) { addMessageLocal({ id: uuid(), type: 'system', text, ts: Date.now() }); }
 function updateRelayTags() {
   const ids = new Set(S.pending.keys());
   for (const m of S.messages) {
@@ -1369,13 +1514,10 @@ function updateRelayTags() {
 
 let _myTypingSent = 0;
 function notifyTyping() {
-  const now = Date.now();
-  if (now - _myTypingSent < 1500) return;
+  const now = Date.now(); if (now - _myTypingSent < 1500) return;
   _myTypingSent = now;
-  if (S.isHost) return;
-  if (me()?.muted) return;
-  const conn = S.conns.get('host');
-  if (conn?.open) conn.send({ type: 'typing' });
+  if (S.isHost) return; if (me()?.muted) return;
+  const conn = S.conns.get('host'); if (conn?.open) conn.send({ type: 'typing' });
 }
 function showTyping(peerId, name) {
   clearTimeout(S._typingTimers.get(peerId));
@@ -1412,16 +1554,12 @@ $('bgFile').onchange = async (e) => {
   const file = e.target.files?.[0]; e.target.value = '';
   if (!file || !hasPerm('manageSettings')) return;
   try {
-    const dataUrl = await fileToResizedDataUrl(file, 1280, 0.65);
+    const dataUrl = await resizeImage(file, 1280, 0.65);
     if (dataUrl.length > BG_MAX_BYTES && !confirm(`Imagem ${(dataUrl.length/1024).toFixed(0)}KB. Enviar?`)) return;
     saveSettings({ background: dataUrl });
   } catch (err) { alert('Erro: ' + (err?.message || err)); }
 };
-$('bgClearBtn').onclick = () => {
-  if (!hasPerm('manageSettings') || !S.settings.background) return;
-  if (!confirm('Remover o background?')) return;
-  saveSettings({ background: '' });
-};
+$('bgClearBtn').onclick = () => { if (!hasPerm('manageSettings') || !S.settings.background) return; if (!confirm('Remover o background?')) return; saveSettings({ background: '' }); };
 
 function updateInviteDisplay() {
   const display = $('roomCodeDisplay'), copyBtn = $('copyCodeBtn'), meta = $('inviteMeta');
@@ -1438,17 +1576,8 @@ $('copyCodeBtn').onclick = () => { if (!hasPerm('shareInvite')) return; safeCopy
 $('copyInviteLinkBtn').onclick = () => { if (!hasPerm('shareInvite')) return; safeCopy(location.origin + location.pathname + '#' + getCurrentInviteCode()); const b = $('copyInviteLinkBtn'); b.textContent = '✓'; setTimeout(() => b.textContent = '🔗 Copiar link de convite', 1500); };
 $('copyInviteLinkBtnModal').onclick = () => { if (!hasPerm('shareInvite')) return; safeCopy(location.origin + location.pathname + '#' + getCurrentInviteCode()); const b = $('copyInviteLinkBtnModal'); b.textContent = '✓'; setTimeout(() => b.textContent = '🔗 Copiar link', 1200); };
 $('copyInviteCodeBtn').onclick = () => { if (!hasPerm('shareInvite')) return; safeCopy(getCurrentInviteCode()); const b = $('copyInviteCodeBtn'); b.textContent = '✓'; setTimeout(() => b.textContent = '📋 Copiar', 1200); };
-$('renewInviteBtn').onclick = () => {
-  if (!hasPerm('shareInvite')) return;
-  if (!confirm('Renovar o código? O atual será invalidado.')) return;
-  requestAction({ name: 'renew-invite' });
-};
-function doRenewInvite() {
-  S._inviteToken = genInviteToken();
-  persistRoom(); broadcastInviteToken();
-  updateInviteDisplay(); updateSettingsInviteDisplay();
-  addSystemMessageHost('🔄 Código de convite renovado.');
-}
+$('renewInviteBtn').onclick = () => { if (!hasPerm('shareInvite')) return; if (!confirm('Renovar o código? O atual será invalidado.')) return; requestAction({ name: 'renew-invite' }); };
+function doRenewInvite() { S._inviteToken = genInviteToken(); persistRoom(); broadcastInviteToken(); updateInviteDisplay(); updateSettingsInviteDisplay(); addSystemMessageHost('🔄 Código de convite renovado.'); }
 
 function enterRoom() {
   showScreen('app');
@@ -1464,8 +1593,7 @@ function applyMyPermissions() {
   if (!hasPerm('manageRelay')) $('pendingPanel').style.display = 'none';
   if (!hasAnyAdminUI()) $('settingsModal').style.display = 'none';
   const isMuted = !!m.muted && m.role !== 'operator';
-  $('messageInput').disabled = isMuted;
-  $('sendBtn').disabled = isMuted;
+  $('messageInput').disabled = isMuted; $('sendBtn').disabled = isMuted;
   $('mutedBanner').classList.toggle('show', isMuted);
   $('inputArea').classList.toggle('muted', isMuted);
   renderUsers(); renderMessages(); updateInputPlaceholder(); updateInviteDisplay();
@@ -1506,8 +1634,7 @@ function renderUsers() {
     else if (u.role === 'admin') { const r = document.createElement('span'); r.className = 'user-role role-admin'; r.textContent = 'adm'; li.appendChild(r); }
     const canModThis = u.id !== S.peer.id && u.role !== 'operator';
     if (canModThis) {
-      const isAdmin = u.role === 'admin';
-      const allowed = isOperator() || !isAdmin;
+      const isAdmin = u.role === 'admin'; const allowed = isOperator() || !isAdmin;
       if (allowed && canKick) { const kb = document.createElement('button'); kb.className = 'mod-btn kick'; kb.title = 'Expulsar'; kb.textContent = '✕'; kb.onclick = () => kickUser(u.id); li.appendChild(kb); }
       if (allowed && canBan) { const bb = document.createElement('button'); bb.className = 'mod-btn ban'; bb.title = 'Banir'; bb.textContent = '🚫'; bb.onclick = () => banUser(u.id); li.appendChild(bb); }
       if (allowed && canMute && !isOffline) { const mb = document.createElement('button'); mb.className = 'mod-btn mute'; mb.title = u.muted ? 'Dessilenciar' : 'Silenciar'; mb.textContent = u.muted ? '🔊' : '🔇'; mb.onclick = () => toggleMuteUser(u.id); li.appendChild(mb); }
@@ -1577,9 +1704,8 @@ function renderMessages() {
       div.innerHTML = `<span class="text">${escapeHtml(m.text)}</span>`;
     } else if (m.type === 'bot') {
       const vis = getBotVisual(m.botId, m.botEmoji, m.botColor);
-      /* === NOVO: avatar clicável com data-bot-id e título === */
       const nameVisual = vis.avatar
-        ? `<img class="bot-avatar-img" data-bot-id="${escapeHtml(m.botId || '')}" src="${escapeHtml(vis.avatar)}" alt="${escapeHtml(m.fromName)}" title="Clique para ver em tamanho grande">`
+        ? `<img class="bot-avatar-img" data-bot-id="${escapeHtml(m.botId || '')}" src="${escapeHtml(vis.avatar)}" style="${avatarStyle(vis.focusX, vis.focusY)}" alt="${escapeHtml(m.fromName)}" title="Clique para ver em tamanho grande">`
         : `<span class="bot-emoji">${escapeHtml(vis.emoji)}</span>`;
       div.style.borderLeft = '3px solid ' + vis.color;
       div.innerHTML =
@@ -1589,9 +1715,8 @@ function renderMessages() {
         `<div class="text">${escapeHtml(m.text)}</div>` + delBtn;
     } else {
       const vis = getBotVisual(m.relayBotId, m.relayBotEmoji, m.relayBotColor);
-      /* === NOVO: avatar clicável na referência do bot === */
       const relayBotVisual = vis.avatar
-        ? `<img class="bot-avatar-img" data-bot-id="${escapeHtml(m.relayBotId || '')}" src="${escapeHtml(vis.avatar)}" alt="${escapeHtml(m.relayBot)}" title="Clique para ver em tamanho grande">`
+        ? `<img class="bot-avatar-img" data-bot-id="${escapeHtml(m.relayBotId || '')}" src="${escapeHtml(vis.avatar)}" style="${avatarStyle(vis.focusX, vis.focusY)}" alt="${escapeHtml(m.relayBot)}" title="Clique para ver em tamanho grande">`
         : `<span class="bot-emoji">${escapeHtml(vis.emoji)}</span>`;
       div.innerHTML =
         `<span class="name">${escapeHtml(m.fromName)}</span>` +
@@ -1619,9 +1744,8 @@ function renderPending() {
   if (S.pending.size === 0) { list.innerHTML = '<p class="empty">Nenhum pedido manual pendente.</p>'; return; }
   for (const relay of S.pending.values()) {
     const vis = getBotVisual(relay.botId, relay.botEmoji, relay.botColor);
-    /* === NOVO: avatar clicável na fila de relay === */
     const botLabel = vis.avatar
-      ? `<img class="bot-avatar-img" data-bot-id="${escapeHtml(relay.botId || '')}" src="${escapeHtml(vis.avatar)}" alt="${escapeHtml(relay.botName || relay.bot)}" title="Clique para ver em tamanho grande">`
+      ? `<img class="bot-avatar-img" data-bot-id="${escapeHtml(relay.botId || '')}" src="${escapeHtml(vis.avatar)}" style="${avatarStyle(vis.focusX, vis.focusY)}" alt="${escapeHtml(relay.botName || relay.bot)}" title="Clique para ver em tamanho grande">`
       : `<span>${escapeHtml(vis.emoji)}</span>`;
     const card = document.createElement('div'); card.className = 'pending-card';
     card.style.borderLeftColor = vis.color;
@@ -1711,7 +1835,10 @@ function renderQuickMentions() {
   for (const b of online) {
     const chip = document.createElement('button');
     chip.className = 'mention-chip' + (b.autoMode ? ' ai' : ''); chip.type = 'button';
-    const visual = b.avatar ? `<img class="mention-avatar" src="${escapeHtml(b.avatar)}" alt="">` : `<span>${escapeHtml(b.emoji)}</span>`;
+    const focus = `${b.avatarFocusX ?? 50}% ${b.avatarFocusY ?? 50}%`;
+    const visual = b.avatar
+      ? `<img class="mention-avatar" src="${escapeHtml(b.avatar)}" style="object-position: ${focus}" alt="">`
+      : `<span>${escapeHtml(b.emoji)}</span>`;
     chip.innerHTML = `${visual} ${escapeHtml(b.name)}${b.autoMode ? ' 🤖' : ''}`;
     chip.title = (b.description || 'Falar com bot') + (b.autoMode ? ' — IA' : ' — manual');
     chip.onclick = () => { $('targetSelect').value = b.id; updateSpeakAsBotVisibility(); updateInputPlaceholder(); $('messageInput').focus(); };
@@ -1734,9 +1861,7 @@ function sendMessage() {
     if (S.isHost) {
       const botMsg = { id: uuid(), type: 'bot', fromName: bot.name, botId: bot.id, botEmoji: bot.emoji, botColor: bot.color, text, ts: Date.now(), spokenBy: S.myName };
       addMessageLocal(botMsg); broadcastAll({ type: 'chat', msg: botMsg }); beep(1046, 0.05, 0.03);
-    } else {
-      const c = S.conns.get('host'); if (c?.open) c.send({ type: 'speak-as-bot', botId: targetBotId, text });
-    }
+    } else { const c = S.conns.get('host'); if (c?.open) c.send({ type: 'speak-as-bot', botId: targetBotId, text }); }
     $('messageInput').focus(); return;
   }
   if (S.isHost) {
@@ -1799,12 +1924,13 @@ function renderBotsList() {
   for (const bot of S.settings.bots) {
     const row = document.createElement('div'); row.className = 'bot-config-row';
     row.style.borderLeftColor = bot.color;
-    const avatarContent = bot.avatar ? `<img src="${escapeHtml(bot.avatar)}" alt="">` : `<span>${escapeHtml(bot.emoji)}</span>`;
+    const focus = `${bot.avatarFocusX ?? 50}% ${bot.avatarFocusY ?? 50}%`;
+    const avatarContent = bot.avatar ? `<img src="${escapeHtml(bot.avatar)}" style="object-position: ${focus}" alt="">` : `<span>${escapeHtml(bot.emoji)}</span>`;
     const modelOptions = AI_MODELS.map(m => `<option value="${m.value}" ${bot.model === m.value ? 'selected' : ''}>${m.label}</option>`).join('');
 
     row.innerHTML = `
       <div class="bot-config-header">
-        <label class="bot-avatar-picker ${editable ? '' : 'disabled'}" title="${editable ? 'Clique para trocar a imagem' : 'Avatar'}">
+        <label class="bot-avatar-picker ${editable ? '' : 'disabled'}" title="${editable ? 'Clique para escolher imagem' : 'Avatar'}">
           ${editable ? '<input type="file" class="bot-avatar-file" accept="image/*" style="display:none">' : ''}
           ${avatarContent}
         </label>
@@ -1824,8 +1950,8 @@ function renderBotsList() {
       <div class="bot-config-grid">
         <div class="full"><label>Descrição curta</label><input type="text" class="bot-desc-input" value="${escapeHtml(bot.description || '')}" maxlength="120" ${editable ? '' : 'disabled'}></div>
         <div class="full"><label>💭 Personalidade</label><textarea class="bot-personality-input" rows="4" placeholder="Ex: Sou uma elfa arqueira de 300 anos..." ${editable ? '' : 'disabled'}>${escapeHtml(bot.personality || '')}</textarea></div>
-        <div class="full"><label>🌍 Cenário / Mundo</label><textarea class="bot-scenario-input" rows="3" placeholder="Ex: Floresta de Eldoria, anoitecer..." ${editable ? '' : 'disabled'}>${escapeHtml(bot.scenario || '')}</textarea></div>
-        <div class="full"><label>💬 Exemplos de diálogo</label><textarea class="bot-examples-input" rows="3" placeholder="Ex:&#10;Jogador: Me ajuda?&#10;Bot: *encosta na árvore* Depende do que oferece." ${editable ? '' : 'disabled'}>${escapeHtml(bot.examples || '')}</textarea></div>
+        <div class="full"><label>🌍 Cenário / Mundo</label><textarea class="bot-scenario-input" rows="3" placeholder="Ex: Floresta de Eldoria..." ${editable ? '' : 'disabled'}>${escapeHtml(bot.scenario || '')}</textarea></div>
+        <div class="full"><label>💬 Exemplos de diálogo</label><textarea class="bot-examples-input" rows="3" ${editable ? '' : 'disabled'}>${escapeHtml(bot.examples || '')}</textarea></div>
         <div class="full"><label>Greeting / dica inicial</label><input type="text" class="bot-greet-input" value="${escapeHtml(bot.greeting || '')}" maxlength="200" ${editable ? '' : 'disabled'}></div>
         <div><label>Modelo</label><select class="bot-model-input" ${editable ? '' : 'disabled'}>${modelOptions}</select></div>
         <div><label>Temperatura (${bot.temperature})</label><input type="range" class="bot-temp-input" min="0" max="1.5" step="0.1" value="${bot.temperature}" ${editable ? '' : 'disabled'}></div>
@@ -1841,6 +1967,7 @@ function renderBotsList() {
         <button class="secondary test-ai-btn tiny">⚡ Testar IA</button>
         <button class="secondary speak-btn tiny">🎭 Falar como bot</button>
         ${bot.avatar ? '<button class="secondary view-avatar-btn tiny">🔍 Ver em alta</button>' : ''}
+        ${editable && bot.avatar ? '<button class="secondary reposition-btn tiny">✏️ Reposicionar</button>' : ''}
         ${editable && bot.avatar ? '<button class="secondary remove-avatar tiny">🗑️ Remover</button>' : ''}
       </div>
       <div class="ai-test-result" id="aiTestResult-${bot.id}"></div>`;
@@ -1869,27 +1996,27 @@ function renderBotsList() {
         updateBot(bot.id, { autoMode: enabled });
       };
       row.querySelector('.remove-bot').onclick = () => { if (!confirm(`Remover "${bot.name}"?`)) return; saveSettings({ bots: S.settings.bots.filter(b => b.id !== bot.id) }); };
+
+      /* Upload → abre modal de enquadramento */
       const avatarFile = row.querySelector('.bot-avatar-file');
       if (avatarFile) avatarFile.onchange = async (e) => {
         const file = e.target.files?.[0]; e.target.value = '';
         if (!file) return;
         try {
-          /* === NOVO: usa AVATAR_SIZE = 256px === */
-          const dataUrl = await fileToResizedDataUrl(file, AVATAR_SIZE, AVATAR_QUALITY);
-          if (dataUrl.length > AVATAR_MAX_BYTES) return alert(`Imagem muito grande: ${(dataUrl.length/1024).toFixed(0)}KB`);
-          updateBot(bot.id, { avatar: dataUrl });
+          /* Pré-processa para 2048px antes de abrir o crop, para não travar o modal com imagens enormes */
+          const pre = await resizeImage(file, AVATAR_FULL_MAX, AVATAR_FULL_QUALITY);
+          openCropModal(bot.id, pre);
         } catch (err) { alert('Erro: ' + (err?.message || err)); }
       };
       const removeAvatarBtn = row.querySelector('.remove-avatar');
-      if (removeAvatarBtn) removeAvatarBtn.onclick = () => { if (!confirm(`Remover avatar?`)) return; updateBot(bot.id, { avatar: '' }); };
+      if (removeAvatarBtn) removeAvatarBtn.onclick = () => { if (!confirm(`Remover avatar?`)) return; updateBot(bot.id, { avatar: '', avatarFull: '', avatarFocusX: 50, avatarFocusY: 50 }); };
+      const repositionBtn = row.querySelector('.reposition-btn');
+      if (repositionBtn) repositionBtn.onclick = () => openCropModal(bot.id, bot.avatarFull || bot.avatar);
     }
 
     row.querySelector('.test-ai-btn').onclick = () => testBotAI(bot);
-
-    /* === NOVO: botão "Ver em alta" === */
     const viewBtn = row.querySelector('.view-avatar-btn');
     if (viewBtn) viewBtn.onclick = () => showBotAvatar(bot.id);
-
     const speakBtn = row.querySelector('.speak-btn');
     if (canSpeakAsBot) speakBtn.onclick = () => { $('settingsModal').style.display = 'none'; $('targetSelect').value = bot.id; S._speakAsBot = true; $('speakAsBotCheck').checked = true; updateSpeakAsBotVisibility(); $('messageInput').focus(); };
     else speakBtn.style.display = 'none';
