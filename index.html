@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<!-- BUILD: v12 — Projeto Hermes + Pollinations AI -->
+<!-- BUILD: v12.1 — Projeto Hermes (sem pop-ups de erro/teste) -->
 <title>Projeto Hermes</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -95,6 +95,7 @@
   .msg.user { background: #232328; align-self: flex-start; }
   .msg.bot { align-self: flex-start; background: #1e2d4a; }
   .msg.system { align-self: center; background: rgba(15,15,16,0.7); color: #aaa; font-style: italic; font-size: 12px; padding: 3px 10px; border-radius: 10px; }
+  .msg.system.warn { background: rgba(58, 26, 26, 0.9); color: #fca5a5; border: 1px solid #7f1d1d; }
   .msg .name { font-weight: 600; color: #8eb4ff; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; }
   .msg .name .bot-emoji { margin-right: 0; }
   .msg .time { font-size: 10px; color: #666; margin-left: 6px; }
@@ -107,11 +108,7 @@
   .typing-line { font-size: 11px; color: #4ade80; padding: 2px 16px; min-height: 16px; font-style: italic; }
   .typing-line .ai-thinking { color: #f59e0b; }
 
-  .bot-avatar-img {
-    width: 16px; height: 16px; border-radius: 50%; object-fit: cover;
-    vertical-align: middle; border: 1px solid rgba(255,255,255,0.15);
-    display: inline-block; flex-shrink: 0;
-  }
+  .bot-avatar-img { width: 16px; height: 16px; border-radius: 50%; object-fit: cover; vertical-align: middle; border: 1px solid rgba(255,255,255,0.15); display: inline-block; flex-shrink: 0; }
 
   .input-area { padding: 12px; border-top: 1px solid #2a2a2e; transition: background 0.2s; background: #17181b; }
   .input-area.speaking-as-bot { background: linear-gradient(to bottom, rgba(245, 158, 11, 0.08), #17181b); }
@@ -162,30 +159,16 @@
   .invite-box .ib-actions button { flex: 1; padding: 6px; font-size: 12px; }
 
   .bg-picker-row { display: flex; gap: 10px; align-items: stretch; margin: 8px 0; }
-  .bg-preview {
-    width: 140px; height: 80px; border-radius: 6px; border: 1px solid #333;
-    background-color: #141415; background-size: cover; background-position: center; background-repeat: no-repeat;
-    display: flex; align-items: center; justify-content: center;
-    color: #666; font-size: 11px; flex: 0 0 140px; text-align: center; padding: 4px;
-  }
+  .bg-preview { width: 140px; height: 80px; border-radius: 6px; border: 1px solid #333; background-color: #141415; background-size: cover; background-position: center; background-repeat: no-repeat; display: flex; align-items: center; justify-content: center; color: #666; font-size: 11px; flex: 0 0 140px; text-align: center; padding: 4px; }
   .bg-picker-actions { display: flex; flex-direction: column; gap: 6px; flex: 1; justify-content: center; }
-  .bg-picker-actions button, .bg-upload-label {
-    display: flex; align-items: center; justify-content: center; gap: 6px;
-    text-align: center; padding: 8px 12px; font-size: 12px; cursor: pointer;
-    background: #2a2a2e; color: #e6e6e8; border: 1px solid #3a3a3f; border-radius: 6px;
-  }
+  .bg-picker-actions button, .bg-upload-label { display: flex; align-items: center; justify-content: center; gap: 6px; text-align: center; padding: 8px 12px; font-size: 12px; cursor: pointer; background: #2a2a2e; color: #e6e6e8; border: 1px solid #3a3a3f; border-radius: 6px; }
   .bg-upload-label:hover { background: #3a3a3f; }
 
   .bot-config-row { background: #1c1c1f; border: 1px solid #2a2a2e; border-left-width: 3px; border-radius: 8px; padding: 10px; margin-bottom: 8px; }
   .bot-config-header { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
   .bot-config-header input[type=text] { flex: 1; font-weight: 600; }
 
-  .bot-avatar-picker {
-    width: 44px; height: 44px; border-radius: 50%; background: #141415;
-    display: flex; align-items: center; justify-content: center; cursor: pointer;
-    border: 2px solid #333; overflow: hidden; flex: 0 0 44px; font-size: 22px;
-    position: relative; transition: border-color 0.15s;
-  }
+  .bot-avatar-picker { width: 44px; height: 44px; border-radius: 50%; background: #141415; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid #333; overflow: hidden; flex: 0 0 44px; font-size: 22px; position: relative; transition: border-color 0.15s; }
   .bot-avatar-picker:hover { border-color: #5865f2; }
   .bot-avatar-picker img { width: 100%; height: 100%; object-fit: cover; }
   .bot-avatar-picker.disabled { cursor: default; opacity: 0.6; }
@@ -202,22 +185,35 @@
   .add-bot-row input { flex: 1; }
   .add-bot-row button { background: #2a2a2e; border: 1px solid #3a3a3f; color: #e6e6e8; padding: 0 12px; border-radius: 6px; }
 
-  .ai-toggle-row {
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 10px; margin: 8px 0;
-    background: #14210f; border: 1px solid #2f5622; border-radius: 6px;
-    font-size: 12px; color: #a7d4a0;
-  }
+  .ai-toggle-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin: 8px 0; background: #14210f; border: 1px solid #2f5622; border-radius: 6px; font-size: 12px; color: #a7d4a0; }
   .ai-toggle-row input[type=checkbox] { width: auto; margin: 0; cursor: pointer; }
   .ai-toggle-row.off { background: #1c1c1f; border-color: #2a2a2e; color: #888; }
 
-  .ai-status {
-    display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 4px;
-    background: #16a34a; color: white; font-weight: 600; margin-left: 4px;
-  }
+  .ai-status { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 4px; background: #16a34a; color: white; font-weight: 600; margin-left: 4px; }
   .ai-status.off { background: #555; }
   .ai-status.testing { background: #f59e0b; animation: pulse 1s infinite; }
   @keyframes pulse { 50% { opacity: 0.5; } }
+
+  /* === NOVO: resultado do teste de IA inline === */
+  .ai-test-result {
+    display: none;
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: #0f1f33;
+    border: 1px solid #2a4a6f;
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #b8c8dd;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .ai-test-result.show { display: block; }
+  .ai-test-result.error { background: #3a1a1a; border-color: #7f1d1d; color: #fca5a5; }
+  .ai-test-result.success { background: #14210f; border-color: #2f5622; color: #a7d4a0; }
+  .ai-test-result strong { color: #fff; }
 
   .admin-user-row { background: #1c1c1f; border: 1px solid #2a2a2e; border-radius: 8px; padding: 10px; margin-bottom: 8px; }
   .admin-user-row.offline { opacity: 0.6; }
@@ -244,11 +240,7 @@
   .mention-chip.ai { border-color: #16a34a; color: #a7d4a0; }
   .mention-avatar { width: 12px; height: 12px; border-radius: 50%; object-fit: cover; }
 
-  .help-box {
-    background: #0f1f33; border: 1px solid #2a4a6f; border-radius: 6px;
-    padding: 10px 12px; margin: 10px 0; font-size: 12px; line-height: 1.6;
-    color: #b8c8dd;
-  }
+  .help-box { background: #0f1f33; border: 1px solid #2a4a6f; border-radius: 6px; padding: 10px 12px; margin: 10px 0; font-size: 12px; line-height: 1.6; color: #b8c8dd; }
   .help-box code { background: #0a0a0b; padding: 1px 5px; border-radius: 3px; color: #8eb4ff; font-family: ui-monospace, monospace; font-size: 11px; }
   .help-box a { color: #8eb4ff; }
 
@@ -396,9 +388,6 @@
           <button id="bgClearBtn" class="secondary">🗑️ Remover</button>
         </div>
       </div>
-      <p style="font-size:11px; color:#666; margin-top:6px; line-height:1.5">
-        A imagem é comprimida automaticamente (~1280px, ~100KB). Um overlay escuro é aplicado para manter o texto legível.
-      </p>
     </div>
 
     <div id="stab-invite" class="stab-content" style="display:none">
@@ -419,7 +408,7 @@
 
     <div id="stab-bots" class="stab-content" style="display:none">
       <div class="help-box">
-        💡 Cada bot tem uma "ficha" (personalidade, cenário, exemplos). Com <b>IA Automática ligada</b>, ele responde sozinho usando a API gratuita do <a href="https://pollinations.ai" target="_blank">Pollinations</a> — sem custo, sem chave, sem limite rígido. Desligado = fila manual (você responde por ele).
+        💡 Cada bot tem uma "ficha" (personalidade, cenário, exemplos). Com <b>IA Automática ligada</b>, ele responde sozinho usando a API gratuita do <a href="https://pollinations.ai" target="_blank">Pollinations</a>. Desligado = fila manual (você responde por ele).
       </div>
       <div id="botsList"></div>
       <div class="add-bot-row">
@@ -430,25 +419,23 @@
 
     <div id="stab-users" class="stab-content" style="display:none">
       <h3>Usuários & Cargos</h3>
-      <p style="font-size:12px; color:#888; margin:0 0 10px">Cargos persistem pelo nome. <b style="color:#f59e0b">Nenhum admin pode falar como bot.</b></p>
       <div id="usersAdminList"></div>
     </div>
 
     <div id="stab-bans" class="stab-content" style="display:none">
       <h3>Usuários banidos</h3>
-      <p style="font-size:12px; color:#888; margin:0 0 10px">Banidos não conseguem entrar na sala (bloqueio por navegador/dispositivo).</p>
       <div id="bansList"></div>
     </div>
 
     <div id="stab-history" class="stab-content" style="display:none">
       <h3>Histórico</h3>
       <button id="exportBtn" class="secondary" style="width:100%; margin-bottom:8px">📥 Exportar histórico (JSON)</button>
-      <button id="exportFullBtn" class="secondary" style="width:100%; margin-bottom:8px">📦 Exportar backup completo (sala + mensagens)</button>
+      <button id="exportFullBtn" class="secondary" style="width:100%; margin-bottom:8px">📦 Exportar backup completo</button>
     </div>
 
     <div id="stab-danger" class="danger-zone" style="display:none">
       <h3 style="color:#ef4444">Zona de perigo</h3>
-      <button id="clearHistoryBtn" class="danger">🧹 Limpar histórico da sala</button>
+      <button id="clearHistoryBtn" class="danger">🧹 Limpar histórico</button>
       <button id="deleteRoomBtn" class="danger">🗑️ Excluir sala permanentemente</button>
     </div>
 
@@ -460,7 +447,7 @@
 
 <script>
 /* ============================================================
-   PROJETO HERMES v12 — integração com Pollinations AI
+   PROJETO HERMES v12.1 — sem pop-ups de erro, tudo no chat
    ============================================================ */
 
 const $ = (id) => document.getElementById(id);
@@ -521,8 +508,7 @@ function fileToResizedDataUrl(file, maxSize = 128, quality = 0.8) {
           canvas.width = w; canvas.height = h;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, w, h);
-          const dataUrl = canvas.toDataURL('image/jpeg', quality);
-          resolve(dataUrl);
+          resolve(canvas.toDataURL('image/jpeg', quality));
         } catch (err) { reject(err); }
       };
       img.src = reader.result;
@@ -553,9 +539,9 @@ const PERMS = {
 };
 
 const AI_MODELS = [
-  { value: 'openai',       label: 'OpenAI (padrão, equilibrado)' },
+  { value: 'openai',       label: 'OpenAI (padrão)' },
   { value: 'openai-fast',  label: 'OpenAI Fast (rápido)' },
-  { value: 'openai-large', label: 'OpenAI Large (melhor qualidade)' },
+  { value: 'openai-large', label: 'OpenAI Large (melhor)' },
   { value: 'mistral',      label: 'Mistral' },
   { value: 'llama',        label: 'Llama' },
   { value: 'deepseek',     label: 'DeepSeek' }
@@ -566,21 +552,12 @@ function makeBot(name = 'Novo Bot', opts = {}) {
     id: uuid(), name, emoji: '🤖', color: '#5865f2', avatar: '',
     description: '', greeting: '', online: true,
     adminOnly: false, maxPending: 3,
-    /* === Campos de IA === */
-    personality: '',
-    scenario: '',
-    examples: '',
-    autoMode: false,
-    model: 'openai',
-    temperature: 0.8,
-    maxHistory: 20,
+    personality: '', scenario: '', examples: '',
+    autoMode: false, model: 'openai', temperature: 0.8, maxHistory: 20,
     ...opts
   };
 }
 
-/* ============================================================
-   PERSISTÊNCIA
-   ============================================================ */
 const DB_NAME = 'relaychat';
 const DB_VERSION = 1;
 let _db = null;
@@ -698,9 +675,6 @@ function persistPending() {
   idbReplaceByRoom('pending', S.code, [...S.pending.values()]).catch(e => console.error(e));
 }
 
-/* ============================================================
-   STATE
-   ============================================================ */
 const S = {
   peer: null, conns: new Map(), isHost: false, code: null, myName: '',
   users: new Map(), messages: [], pending: new Map(),
@@ -718,12 +692,9 @@ const S = {
   _typingTimers: new Map(),
   _speakAsBot: false,
   _inviteToken: '',
-  _botThinking: new Map()  /* botId -> true enquanto processa IA */
+  _botThinking: new Map()
 };
 
-/* ============================================================
-   HELPERS
-   ============================================================ */
 function me() { return S.users.get(S.peer?.id); }
 function isOperator() { return me()?.role === 'operator'; }
 function hasPerm(p) {
@@ -732,20 +703,14 @@ function hasPerm(p) {
   if (m.role === 'admin') return !!m.perms?.[p];
   return false;
 }
-function hasAnyAdminUI() {
-  return isOperator() || Object.keys(PERMS).some(k => hasPerm(k));
-}
+function hasAnyAdminUI() { return isOperator() || Object.keys(PERMS).some(k => hasPerm(k)); }
 function findBot(idOrName) {
   if (!idOrName) return null;
   return S.settings.bots.find(b => b.id === idOrName || b.name === idOrName) || null;
 }
 function getBotVisual(botId, fallbackEmoji, fallbackColor) {
   const bot = botId ? findBot(botId) : null;
-  return {
-    avatar: bot?.avatar || '',
-    emoji: bot?.emoji || fallbackEmoji || '🤖',
-    color: bot?.color || fallbackColor || '#5865f2'
-  };
+  return { avatar: bot?.avatar || '', emoji: bot?.emoji || fallbackEmoji || '🤖', color: bot?.color || fallbackColor || '#5865f2' };
 }
 function uniqueName(base, existing) {
   base = base.trim() || 'Anônimo';
@@ -761,37 +726,18 @@ function findUserByDevice(deviceId) {
   }
   return null;
 }
-function countOnlineMembers() {
-  let n = 0;
-  for (const u of S.users.values()) if (u.online !== false) n++;
-  return n;
-}
-function countTotalMembers() {
-  return [...S.users.values()].filter(u => u.role !== 'operator').length;
-}
+function countOnlineMembers() { let n = 0; for (const u of S.users.values()) if (u.online !== false) n++; return n; }
+function countTotalMembers() { return [...S.users.values()].filter(u => u.role !== 'operator').length; }
 function canSeeInvite(user) {
   if (!user) return false;
   return user.role === 'operator' || (user.role === 'admin' && !!user.perms?.shareInvite);
 }
-function getCurrentInviteCode() {
-  if (!S.code) return '';
-  if (!S._inviteToken) return S.code + '-';
-  return S.code + '-' + S._inviteToken;
-}
-function isValidInviteToken(token) {
-  if (!token || !S._inviteToken) return false;
-  return String(token).toUpperCase().trim() === S._inviteToken.toUpperCase();
-}
+function getCurrentInviteCode() { return S.code + (S._inviteToken ? '-' + S._inviteToken : '-'); }
+function isValidInviteToken(token) { return !!(token && S._inviteToken && String(token).toUpperCase().trim() === S._inviteToken.toUpperCase()); }
 
-/* ============================================================
-   SOM
-   ============================================================ */
 let _audioCtx = null;
 let _soundEnabled = localStorage.getItem('relaychat_sound') !== 'off';
-function updateSoundBtn() {
-  const b = $('soundToggleBtn');
-  if (b) b.textContent = _soundEnabled ? '🔔' : '🔕';
-}
+function updateSoundBtn() { const b = $('soundToggleBtn'); if (b) b.textContent = _soundEnabled ? '🔔' : '🔕'; }
 $('soundToggleBtn').onclick = () => {
   _soundEnabled = !_soundEnabled;
   localStorage.setItem('relaychat_sound', _soundEnabled ? 'on' : 'off');
@@ -803,38 +749,38 @@ function beep(freq = 880, dur = 0.08, vol = 0.05) {
   try {
     _audioCtx = _audioCtx || new (window.AudioContext || window.webkitAudioContext)();
     const o = _audioCtx.createOscillator(); const g = _audioCtx.createGain();
-    o.frequency.value = freq; o.type = 'sine';
-    g.gain.value = vol;
+    o.frequency.value = freq; o.type = 'sine'; g.gain.value = vol;
     o.connect(g); g.connect(_audioCtx.destination);
     o.start(); o.stop(_audioCtx.currentTime + dur);
   } catch {}
 }
 
+function showScreen(name) {
+  $('setup').style.display = name === 'setup' ? 'flex' : 'none';
+  $('app').style.display = name === 'app' ? 'grid' : 'none';
+}
+function safeCopy(text) {
+  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).catch(() => prompt('Copie:', text));
+  else prompt('Copie:', text);
+}
+
 /* ============================================================
-   POLLINATIONS AI — Geração de respostas dos bots
+   IA — Pollinations (sem pop-ups de erro)
    ============================================================ */
 function buildSystemPrompt(bot) {
-  let p = `Você é "${bot.name}", um personagem em um RPG interativo multiplayer. Você NUNCA deve sair do personagem. NUNCA diga que é uma IA ou um modelo de linguagem. Você é ${bot.name}, ponto final. Responda sempre em português brasileiro, na primeira pessoa, no estilo narrativo do personagem.`;
-  p += `\n\nRegras de estilo:`;
-  p += `\n- Escreva ações e descrições entre asteriscos (ex: *sorri e cruza os braços*).`;
-  p += `\n- Diálogos sem asteriscos.`;
-  p += `\n- Mantenha a coerência com o histórico da conversa e com o cenário.`;
-  p += `\n- Seja imersivo, não seja genérico. Reaja ao contexto.`;
+  let p = `Você é "${bot.name}", um personagem em um RPG interativo multiplayer. Você NUNCA deve sair do personagem. NUNCA diga que é uma IA. Responda sempre em português brasileiro, na primeira pessoa.\n\nRegras:\n- Ações/descrições entre asteriscos (ex: *sorri e cruza os braços*)\n- Diálogos sem asteriscos\n- Seja imersivo, reaja ao contexto, mantenha a coerência`;
   if (bot.description) p += `\n\nDESCRIÇÃO CURTA:\n${bot.description}`;
   if (bot.personality) p += `\n\nPERSONALIDADE:\n${bot.personality}`;
-  if (bot.scenario)    p += `\n\nCENÁRIO / MUNDO:\n${bot.scenario}`;
-  if (bot.examples)    p += `\n\nEXEMPLOS DE DIÁLOGO (para guiar seu estilo):\n${bot.examples}`;
+  if (bot.scenario) p += `\n\nCENÁRIO:\n${bot.scenario}`;
+  if (bot.examples) p += `\n\nEXEMPLOS DE DIÁLOGO:\n${bot.examples}`;
   return p;
 }
 
 function getConversationHistory(botId, userId, limit = 20) {
-  const relevant = S.messages.filter(m =>
-    !m.deleted && (
-      (m.fromId === userId && m.relayBotId === botId) ||
-      (m.type === 'bot' && m.botId === botId && m.replyToId === userId) ||
-      (m.type === 'bot' && m.botId === botId && m.spokenTo === userId && m.autoGenerated)
-    )
-  );
+  const relevant = S.messages.filter(m => !m.deleted && (
+    (m.fromId === userId && m.relayBotId === botId) ||
+    (m.type === 'bot' && m.botId === botId && m.replyToName === (S.users.get(userId)?.name))
+  ));
   return relevant.slice(-limit);
 }
 
@@ -842,11 +788,7 @@ async function callPollinationsAI(bot, history, userText, userName, retries = 2)
   const systemPrompt = buildSystemPrompt(bot);
   const messages = [{ role: 'system', content: systemPrompt }];
   for (const h of history) {
-    if (h.type === 'bot') {
-      messages.push({ role: 'assistant', content: String(h.text || '') });
-    } else {
-      messages.push({ role: 'user', content: `${h.fromName || 'Jogador'}: ${h.text || ''}` });
-    }
+    messages.push({ role: h.type === 'bot' ? 'assistant' : 'user', content: h.type === 'bot' ? String(h.text || '') : `${h.fromName || 'Jogador'}: ${h.text || ''}` });
   }
   messages.push({ role: 'user', content: `${userName}: ${userText}` });
 
@@ -859,21 +801,14 @@ async function callPollinationsAI(bot, history, userText, userName, retries = 2)
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
       const res = await fetch('https://text.pollinations.ai/openai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
-        body: JSON.stringify({
-          model,
-          messages,
-          temperature,
-          referrer: 'projeto-hermes'
-        })
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal,
+        body: JSON.stringify({ model, messages, temperature, referrer: 'projeto-hermes' })
       });
       clearTimeout(timer);
-      if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + res.statusText);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
       const content = data?.choices?.[0]?.message?.content;
-      if (!content || !content.trim()) throw new Error('Resposta vazia da IA');
+      if (!content || !content.trim()) throw new Error('Resposta vazia');
       return content.trim();
     } catch (e) {
       console.warn(`[Hermes] Tentativa ${attempt + 1} falhou:`, e.message);
@@ -883,22 +818,39 @@ async function callPollinationsAI(bot, history, userText, userName, retries = 2)
   }
 }
 
-/* Teste de IA — chamado do botão "Testar" na config */
-async function testBotAI(bot, statusEl) {
-  if (statusEl) { statusEl.textContent = '⏳ testando...'; statusEl.className = 'ai-status testing'; }
+async function testBotAI(bot) {
+  const resultEl = document.getElementById('aiTestResult-' + bot.id);
+  const statusEl = document.getElementById('aiStatus-' + bot.id);
+  if (statusEl) { statusEl.textContent = '⏳ testando'; statusEl.className = 'ai-status testing'; }
+  if (resultEl) { resultEl.className = 'ai-test-result'; resultEl.textContent = 'Enviando requisição para a API...'; }
+
   try {
     const reply = await callPollinationsAI(bot, [], 'Diga "olá" e se apresente brevemente.', 'Mestre', 1);
     if (statusEl) { statusEl.textContent = '✅ ok'; statusEl.className = 'ai-status'; }
-    alert(`✅ IA do bot "${bot.name}" funcionou!\n\nResposta:\n\n${reply}`);
+    if (resultEl) {
+      resultEl.className = 'ai-test-result success show';
+      resultEl.innerHTML = `<strong>✅ Resposta da IA:</strong>\n\n${escapeHtml(reply)}`;
+    }
   } catch (e) {
     if (statusEl) { statusEl.textContent = '❌ falhou'; statusEl.className = 'ai-status off'; }
-    alert(`❌ Falha ao testar IA de "${bot.name}".\n\nErro: ${e.message}\n\nDicas:\n- Verifique sua conexão com internet\n- Tente novamente em alguns segundos (o Pollinations às vezes fica instável)\n- Tente outro modelo (OpenAI, Mistral, Llama...)`);
+    if (resultEl) {
+      resultEl.className = 'ai-test-result error show';
+      resultEl.innerHTML = `<strong>❌ Falha:</strong> ${escapeHtml(e.message)}\n\n` +
+        `Dicas:\n• Verifique sua internet\n• Tente novamente em 10s (Pollinations às vezes instabiliza)\n• Troque o modelo (Mistral, Llama)`;
+    }
+    /* Restaura o status visual padrão depois de 5s */
+    setTimeout(() => {
+      const cur = findBot(bot.id);
+      if (statusEl && cur) {
+        statusEl.textContent = cur.autoMode ? '🤖 IA' : 'manual';
+        statusEl.className = 'ai-status ' + (cur.autoMode ? '' : 'off');
+      }
+    }, 5000);
   }
 }
 
-/* Geração assíncrona no host — chamada quando um usuário fala com um bot autoMode */
+/* === Geração assíncrona com erro no chat (sem alert) === */
 async function hostGenerateAndReply(peerId, user, bot, userText, originalMsgId) {
-  /* Marca que o bot está pensando */
   S._botThinking.set(bot.id, true);
   broadcastAll({ type: 'bot-thinking', botId: bot.id, botName: bot.name, botEmoji: bot.emoji });
   renderTypingLine();
@@ -907,21 +859,16 @@ async function hostGenerateAndReply(peerId, user, bot, userText, originalMsgId) 
     const history = getConversationHistory(bot.id, peerId, bot.maxHistory || 20);
     const reply = await callPollinationsAI(bot, history, userText, user.name);
 
-    /* Cria a mensagem de resposta */
     const botMsg = {
-      id: uuid(), type: 'bot',
-      fromName: bot.name,
+      id: uuid(), type: 'bot', fromName: bot.name,
       botId: bot.id, botEmoji: bot.emoji, botColor: bot.color,
       text: String(reply).slice(0, 4000),
-      ts: Date.now(),
-      autoGenerated: true,
-      spokenTo: peerId,
+      ts: Date.now(), autoGenerated: true, spokenTo: peerId,
       replyToName: user.name
     };
     addMessageLocal(botMsg);
     broadcastAll({ type: 'chat', msg: botMsg });
 
-    /* Limpa o ⏳ da mensagem original */
     if (originalMsgId) {
       const orig = S.messages.find(m => m.id === originalMsgId);
       if (orig) { delete orig.relayPending; persistMessage(orig); }
@@ -929,11 +876,10 @@ async function hostGenerateAndReply(peerId, user, bot, userText, originalMsgId) 
     beep(1046, 0.08, 0.04);
   } catch (err) {
     console.error('[Hermes] Erro na IA:', err);
-    sendError(peerId, `⚠️ O bot "${bot.name}" não conseguiu responder.\nMotivo: ${err.message}\n\nTente novamente em alguns segundos.`);
-    /* Mensagem de sistema para o operador ver */
+    /* ⚠️ CORREÇÃO: erro vai pro CHAT como mensagem de sistema, não alert */
     const sysMsg = {
-      id: uuid(), type: 'system',
-      text: `⚠️ IA de ${bot.name} falhou: ${err.message}`,
+      id: uuid(), type: 'system', warn: true,
+      text: `⚠️ ${bot.name} não conseguiu responder (${err.message}). Tente novamente em alguns segundos.`,
       ts: Date.now()
     };
     addMessageLocal(sysMsg);
@@ -950,17 +896,8 @@ async function hostGenerateAndReply(peerId, user, bot, userText, originalMsgId) 
 }
 
 /* ============================================================
-   SETUP
+   SETUP SCREEN
    ============================================================ */
-function showScreen(name) {
-  $('setup').style.display = name === 'setup' ? 'flex' : 'none';
-  $('app').style.display = name === 'app' ? 'grid' : 'none';
-}
-function safeCopy(text) {
-  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).catch(() => prompt('Copie:', text));
-  else prompt('Copie:', text);
-}
-
 document.querySelectorAll('.tab').forEach(tab => {
   tab.onclick = () => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -987,8 +924,8 @@ $('createBtn').onclick = async () => {
 $('joinBtn').onclick = async () => {
   const parsed = parseInviteCode($('joinCode').value);
   const name = $('joinName').value.trim();
-  if (!parsed) return alert('Formato inválido.\n\nUse o código completo no formato: ABC123-XY7K9P');
-  if (!parsed.token) return alert('Código incompleto.\n\nPeça o código completo a um administrador da sala.');
+  if (!parsed) return alert('Formato inválido. Use ABC123-XY7K9P');
+  if (!parsed.token) return alert('Código incompleto. Peça o código completo.');
   if (!name) return alert('Digite seu nome.');
   localStorage.setItem('relaychat_name', name);
   await getDB();
@@ -999,12 +936,11 @@ $('joinBtn').onclick = async () => {
    HOST
    ============================================================ */
 async function createRoom(name, code) {
-  const peerId = 'relaychat-' + code;
-  const peer = new Peer(peerId);
+  const peer = new Peer('relaychat-' + code);
   peer.on('open', async () => {
     S.peer = peer; S.isHost = true; S.code = code; S.myName = name; S._createdAt = Date.now();
     S._inviteToken = genInviteToken();
-    S.users.set(peerId, { id: peerId, name, role: 'operator', perms: {}, deviceId: getDeviceId(), muted: false, online: true });
+    S.users.set(peer.id, { id: peer.id, name, role: 'operator', perms: {}, deviceId: getDeviceId(), muted: false, online: true });
     location.hash = '';
     peer.on('connection', onHostNewConnection);
     persistRoom();
@@ -1013,11 +949,8 @@ async function createRoom(name, code) {
     addSystemMessageHost(`${name} criou a sala.`);
   });
   peer.on('error', (err) => {
-    if (err.type === 'unavailable-id') {
-      peer.destroy();
-      if (S.code === code) alert('Código já em uso. Tente novamente.');
-      else createRoom(name, genCode());
-    } else alert('Erro ao criar sala: ' + err.message);
+    if (err.type === 'unavailable-id') { peer.destroy(); if (S.code === code) alert('Código em uso.'); else createRoom(name, genCode()); }
+    else alert('Erro: ' + err.message);
   });
 }
 
@@ -1031,7 +964,7 @@ function onHostNewConnection(conn) {
 
     const banned = deviceId ? S._bans.find(b => b.deviceId === deviceId) : null;
     if (banned) {
-      conn.send({ type: 'ban-rejected', reason: banned.reason || 'Você foi banido desta sala.' });
+      conn.send({ type: 'ban-rejected', reason: banned.reason || 'Você foi banido.' });
       setTimeout(() => conn.close(), 400); return;
     }
 
@@ -1039,7 +972,7 @@ function onHostNewConnection(conn) {
     const isResume = !!(resumeData && resumeData.deviceId === deviceId);
     const isInvite = !!(inviteToken && isValidInviteToken(inviteToken));
     if (!isResume && !isInvite) {
-      conn.send({ type: 'auth-rejected', reason: 'Código de convite inválido. Peça um novo código a um administrador.' });
+      conn.send({ type: 'auth-rejected', reason: 'Código inválido. Peça um novo código.' });
       setTimeout(() => conn.close(), 400); return;
     }
 
@@ -1047,55 +980,30 @@ function onHostNewConnection(conn) {
     const isReconnect = !!existing;
 
     if (!existing && countTotalMembers() >= MAX_FRIENDS) {
-      conn.send({ type: 'error', message: 'Sala cheia (' + MAX_FRIENDS + ' membros já registrados).' });
+      conn.send({ type: 'error', message: 'Sala cheia.' });
       setTimeout(() => conn.close(), 400); return;
     }
 
     let prevMuted = false, prevRole = 'user', prevPerms = {}, prevName = '';
     if (existing) {
-      prevMuted = !!existing.user.muted;
-      prevRole = existing.user.role;
-      prevPerms = existing.user.perms || {};
-      prevName = existing.user.name;
-      const oldConn = S.conns.get(existing.pid);
-      if (oldConn) try { oldConn.close(); } catch {}
-      for (const [id, r] of [...S.pending]) {
-        if (r.userId === existing.pid) {
-          S.pending.delete(id);
-          const orig = S.messages.find(m => m.relayPending === id);
-          if (orig) { delete orig.relayPending; persistMessage(orig); }
-        }
-      }
-      S.users.delete(existing.pid);
-      S.conns.delete(existing.pid);
-      broadcastAll({ type: 'pending-update', pending: [...S.pending.values()] });
-      persistPending();
+      prevMuted = !!existing.user.muted; prevRole = existing.user.role; prevPerms = existing.user.perms || {}; prevName = existing.user.name;
+      const oldConn = S.conns.get(existing.pid); if (oldConn) try { oldConn.close(); } catch {}
+      for (const [id, r] of [...S.pending]) if (r.userId === existing.pid) { S.pending.delete(id); const orig = S.messages.find(m => m.relayPending === id); if (orig) { delete orig.relayPending; persistMessage(orig); } }
+      S.users.delete(existing.pid); S.conns.delete(existing.pid);
+      broadcastAll({ type: 'pending-update', pending: [...S.pending.values()] }); persistPending();
     }
 
     let name, role = 'user', perms = {}, muted = false;
-    if (isReconnect) {
-      name = prevName; role = prevRole; perms = prevPerms; muted = prevMuted;
-    } else if (isResume) {
-      name = resumeData.name || rawName || 'Anônimo';
-      role = resumeData.role || 'user';
-      perms = resumeData.perms || {};
-      muted = !!resumeData.muted;
-    } else {
-      name = rawName || 'Anônimo';
-      const savedAdmin = S._adminNames.get(name.toLowerCase());
-      if (savedAdmin) { role = 'admin'; perms = savedAdmin; }
-    }
+    if (isReconnect) { name = prevName; role = prevRole; perms = prevPerms; muted = prevMuted; }
+    else if (isResume) { name = resumeData.name || rawName || 'Anônimo'; role = resumeData.role || 'user'; perms = resumeData.perms || {}; muted = !!resumeData.muted; }
+    else { name = rawName || 'Anônimo'; const savedAdmin = S._adminNames.get(name.toLowerCase()); if (savedAdmin) { role = 'admin'; perms = savedAdmin; } }
 
-    if (!isReconnect) {
-      name = uniqueName(name, [...S.users.values()].map(u => u.name));
-    }
+    if (!isReconnect) name = uniqueName(name, [...S.users.values()].map(u => u.name));
 
     S.conns.set(conn.peer, conn);
     S.users.set(conn.peer, { id: conn.peer, name, role, perms, deviceId, muted, online: true, lastSeen: Date.now() });
 
-    for (const [tok, data] of [...S._resumeTokens]) {
-      if (data.deviceId === deviceId) S._resumeTokens.delete(tok);
-    }
+    for (const [tok, data] of [...S._resumeTokens]) if (data.deviceId === deviceId) S._resumeTokens.delete(tok);
     const newResumeToken = uuid();
     S._resumeTokens.set(newResumeToken, { deviceId, name, role, perms, muted });
     persistRoom();
@@ -1122,7 +1030,7 @@ function hostOnData(peerId, data) {
 
 function hostHandleChat(peerId, data) {
   const user = S.users.get(peerId); if (!user) return;
-  if (user.muted) return sendError(peerId, '🔇 Você está silenciado.');
+  if (user.muted) return sendSysWarn(peerId, '🔇 Você está silenciado.');
   if (!S.settings.allowFreeChat && user.role === 'user') return;
   if (!checkRateLimit(peerId)) return;
   const text = String(data.text || '').slice(0, 4000).trim(); if (!text) return;
@@ -1131,22 +1039,25 @@ function hostHandleChat(peerId, data) {
   clearTyping(peerId);
 }
 
+/* ⚠️ CORREÇÃO: sendSysWarn envia mensagem de sistema em vez de alert */
+function sendSysWarn(peerId, message) {
+  const msg = { id: uuid(), type: 'system', warn: true, text: message, ts: Date.now(), forPeer: peerId };
+  addMessageLocal(msg);
+  const conn = S.conns.get(peerId);
+  if (conn) try { conn.send({ type: 'chat', msg }); } catch {}
+}
+
 function hostHandleRelayRequest(peerId, data) {
   const user = S.users.get(peerId); if (!user) return;
-  if (user.muted) return sendError(peerId, '🔇 Você está silenciado.');
+  if (user.muted) return sendSysWarn(peerId, '🔇 Você está silenciado.');
   if (!checkRateLimit(peerId)) return;
   const bot = findBot(data.botId || data.bot);
-  if (!bot) return sendError(peerId, 'Bot não encontrado.');
-  if (!bot.online) return sendError(peerId, `O bot "${bot.name}" está offline.`);
-  if (bot.adminOnly && user.role === 'user') return sendError(peerId, `O bot "${bot.name}" é só para admins.`);
+  if (!bot) return sendSysWarn(peerId, 'Bot não encontrado.');
+  if (!bot.online) return sendSysWarn(peerId, `O bot "${bot.name}" está offline.`);
+  if (bot.adminOnly && user.role === 'user') return sendSysWarn(peerId, `O bot "${bot.name}" é só para admins.`);
 
   const text = String(data.text || '').slice(0, 4000).trim(); if (!text) return;
 
-  /* Registra a mensagem do usuário */
-  const contextCount = S.messages.filter(m =>
-    (m.fromId === peerId && m.relayBotId === bot.id) ||
-    (m.type === 'bot' && m.botId === bot.id && m.replyToId === peerId)
-  ).length;
   const relayMsgId = uuid();
   const relayMsg = {
     id: relayMsgId, type: 'user', fromId: peerId, fromName: user.name, text, ts: Date.now(),
@@ -1158,19 +1069,17 @@ function hostHandleRelayRequest(peerId, data) {
   clearTyping(peerId);
 
   if (bot.autoMode) {
-    /* === MODO IA AUTOMÁTICA === */
     if (S._botThinking.get(bot.id)) {
-      sendError(peerId, `⏳ O bot "${bot.name}" ainda está pensando na resposta anterior. Aguarde um instante.`);
+      sendSysWarn(peerId, `⏳ ${bot.name} ainda está pensando. Aguarde um instante.`);
       const orig = S.messages.find(m => m.id === relayMsgId);
       if (orig) { delete orig.relayPending; persistMessage(orig); }
       return;
     }
     hostGenerateAndReply(peerId, user, bot, text, relayMsgId);
   } else {
-    /* === MODO RELAY MANUAL (fila) === */
     const botPending = [...S.pending.values()].filter(r => r.botId === bot.id).length;
     if (botPending >= bot.maxPending) {
-      sendError(peerId, `O bot "${bot.name}" já tem ${bot.maxPending} pedidos na fila manual.`);
+      sendSysWarn(peerId, `O bot "${bot.name}" já tem ${bot.maxPending} pedidos na fila manual.`);
       const orig = S.messages.find(m => m.id === relayMsgId);
       if (orig) { delete orig.relayPending; persistMessage(orig); }
       return;
@@ -1179,7 +1088,7 @@ function hostHandleRelayRequest(peerId, data) {
     const relay = {
       id: relayId, userId: peerId, userName: user.name,
       botId: bot.id, botName: bot.name, botEmoji: bot.emoji, botColor: bot.color,
-      text, ts: Date.now(), contextCount, userRole: user.role
+      text, ts: Date.now(), userRole: user.role
     };
     S.pending.set(relayId, relay);
     const orig = S.messages.find(m => m.id === relayMsgId);
@@ -1192,51 +1101,32 @@ function hostHandleRelayRequest(peerId, data) {
 
 function hostHandleSpeakAsBot(peerId, data) {
   const user = S.users.get(peerId); if (!user) return;
-  if (user.role !== 'operator') return sendError(peerId, 'Apenas o criador da sala pode falar como bot.');
+  if (user.role !== 'operator') return sendSysWarn(peerId, 'Apenas o criador pode falar como bot.');
   if (!checkRateLimit(peerId)) return;
-  const bot = findBot(data.botId); if (!bot) return sendError(peerId, 'Bot não encontrado.');
+  const bot = findBot(data.botId); if (!bot) return sendSysWarn(peerId, 'Bot não encontrado.');
   const text = String(data.text || '').slice(0, 4000).trim(); if (!text) return;
   const botMsg = {
     id: uuid(), type: 'bot', fromName: bot.name,
     botId: bot.id, botEmoji: bot.emoji, botColor: bot.color,
     text, ts: Date.now(), spokenBy: user.name
   };
-  addMessageLocal(botMsg);
-  broadcastAll({ type: 'chat', msg: botMsg });
-  clearTyping(peerId);
-  beep(1046, 0.05, 0.03);
+  addMessageLocal(botMsg); broadcastAll({ type: 'chat', msg: botMsg });
+  clearTyping(peerId); beep(1046, 0.05, 0.03);
 }
 
 function checkRateLimit(peerId) {
   const now = Date.now();
   const last = S._rateLimit.get(peerId) || 0;
   if (now - last < RATE_LIMIT_MS) return false;
-  S._rateLimit.set(peerId, now);
-  return true;
-}
-function sendError(peerId, message) {
-  const conn = S.conns.get(peerId);
-  if (conn) try { conn.send({ type: 'error', message }); } catch {}
+  S._rateLimit.set(peerId, now); return true;
 }
 function hostOnDisconnect(peerId) {
   const user = S.users.get(peerId); if (!user) return;
-  S.conns.delete(peerId); S._rateLimit.delete(peerId);
-  clearTyping(peerId);
-
-  user.online = false;
-  user.lastSeen = Date.now();
-
+  S.conns.delete(peerId); S._rateLimit.delete(peerId); clearTyping(peerId);
+  user.online = false; user.lastSeen = Date.now();
   let changed = false;
-  for (const [id, r] of S.pending) {
-    if (r.userId === peerId) {
-      S.pending.delete(id);
-      const orig = S.messages.find(m => m.relayPending === id);
-      if (orig) { delete orig.relayPending; persistMessage(orig); }
-      changed = true;
-    }
-  }
+  for (const [id, r] of S.pending) if (r.userId === peerId) { S.pending.delete(id); const orig = S.messages.find(m => m.relayPending === id); if (orig) { delete orig.relayPending; persistMessage(orig); } changed = true; }
   if (changed) { persistPending(); broadcastAll({ type: 'pending-update', pending: [...S.pending.values()] }); }
-
   persistRoom();
   broadcastAll({ type: 'users-update', users: [...S.users.values()] });
   addSystemMessageHost(`${user.name} ficou offline.`);
@@ -1255,58 +1145,35 @@ function joinRoom(code, name, opts = {}) {
   const peer = new Peer();
   peer.on('open', () => {
     S.peer = peer; S.isHost = false; S.code = code; S.myName = name;
-
     const metadata = { name, deviceId: getDeviceId() };
     if (opts.inviteToken) metadata.inviteToken = opts.inviteToken;
     if (opts.resumeToken) metadata.resumeToken = opts.resumeToken;
-
     const conn = peer.connect('relaychat-' + code, { reliable: true, metadata });
     S.conns.set('host', conn);
-
     const timeout = setTimeout(() => {
-      if (!S.conns.get('host')?.open) {
-        if (!opts.auto) alert('Não foi possível conectar. Verifique o código e se o host está online.');
-        peer.destroy();
-      }
+      if (!S.conns.get('host')?.open) { if (!opts.auto) alert('Não foi possível conectar.'); peer.destroy(); }
     }, 10000);
-
-    let gotWelcome = false;
-    let gotReject = false;
-
+    let gotWelcome = false; let gotReject = false;
     conn.on('open', () => { clearTimeout(timeout); });
     conn.on('data', (data) => {
       if (data?.type === 'welcome') {
         gotWelcome = true;
-        if (data.resumeToken) {
-          persistKV('lastRoom', { code: S.code, name: S.myName, role: 'user', resumeToken: data.resumeToken });
-        }
-        applyWelcome(data.state);
-        enterRoom();
-        return;
+        if (data.resumeToken) persistKV('lastRoom', { code: S.code, name: S.myName, role: 'user', resumeToken: data.resumeToken });
+        applyWelcome(data.state); enterRoom(); return;
       }
       if (data?.type === 'auth-rejected' || data?.type === 'ban-rejected') gotReject = true;
       userOnData(data);
     });
-
     conn.on('close', () => {
       if (gotReject) return;
-      if (!gotWelcome) {
-        if (!opts.auto && $('app').style.display !== 'none') {
-          alert('Não foi possível entrar na sala.');
-          setTimeout(() => location.reload(), 200);
-        }
-      } else {
-        addSystemMessageLocal('Conexão perdida.');
-      }
+      if (!gotWelcome) { if (!opts.auto && $('app').style.display !== 'none') { alert('Não foi possível entrar.'); setTimeout(() => location.reload(), 200); } }
+      else addSystemMessageLocal('Conexão perdida.');
     });
     conn.on('error', (e) => console.error(e));
   });
   peer.on('error', (err) => {
-    if (err.type === 'peer-unavailable') {
-      if (!opts.auto) alert('Sala não encontrada.');
-    } else if (!opts.auto) {
-      alert('Erro: ' + err.message);
-    }
+    if (err.type === 'peer-unavailable') { if (!opts.auto) alert('Sala não encontrada.'); }
+    else if (!opts.auto) alert('Erro: ' + err.message);
   });
 }
 
@@ -1332,53 +1199,47 @@ function userOnData(data) {
       return renderMessages();
     }
     case 'clear-history':
-      idbClearByRoom('messages', S.code).then(() => {
-        S.messages = []; S.pending.clear();
-        renderMessages(); renderPending();
-      });
+      idbClearByRoom('messages', S.code).then(() => { S.messages = []; S.pending.clear(); renderMessages(); renderPending(); });
       return;
     case 'settings-update':
-      S.settings = data.settings;
-      applySettings();
+      S.settings = data.settings; applySettings();
       if ($('settingsModal').style.display !== 'none') renderSettingsModal();
       return;
     case 'invite-token-update':
       S._inviteToken = data.inviteToken || '';
-      updateInviteDisplay();
-      updateSettingsInviteDisplay();
-      return;
+      updateInviteDisplay(); updateSettingsInviteDisplay(); return;
     case 'typing': return showTyping(data.peerId, data.name);
-    case 'bot-thinking':
-      S._botThinking.set(data.botId, data.botName || 'Bot');
-      renderTypingLine(); return;
-    case 'bot-thinking-end':
-      S._botThinking.delete(data.botId);
-      renderTypingLine(); return;
+    case 'bot-thinking': S._botThinking.set(data.botId, data.botName || 'Bot'); renderTypingLine(); return;
+    case 'bot-thinking-end': S._botThinking.delete(data.botId); renderTypingLine(); return;
     case 'ban-rejected':
-      alert('🚫 Você foi banido desta sala.\n\nMotivo: ' + (data.reason || '—'));
       deleteKV('lastRoom'); location.hash = '';
-      setTimeout(() => location.reload(), 200); return;
+      addSystemMessageLocal('🚫 Você foi banido: ' + (data.reason || 'sem motivo'));
+      setTimeout(() => location.reload(), 1500); return;
     case 'auth-rejected':
-      alert('❌ Não foi possível entrar.\n\n' + (data.reason || 'Código inválido.'));
       deleteKV('lastRoom'); location.hash = '';
-      setTimeout(() => location.reload(), 200); return;
+      addSystemMessageLocal('❌ Não foi possível entrar: ' + (data.reason || 'código inválido'));
+      setTimeout(() => location.reload(), 1500); return;
     case 'kick':
-      alert('Você foi removido da sala.\nMotivo: ' + (data.reason || '—'));
+      addSystemMessageLocal('Você foi removido da sala: ' + (data.reason || '—'));
       if (!data.temporary) deleteKV('lastRoom');
-      S.peer?.destroy(); return location.reload();
-    case 'error': alert(data.message); return;
+      S.peer?.destroy();
+      setTimeout(() => location.reload(), 1500);
+      return;
+    /* ⚠️ CORREÇÃO: erro agora é mensagem de sistema no chat, não alert() */
+    case 'error':
+      addSystemMessageLocal('⚠️ ' + (data.message || 'Erro'));
+      return;
   }
 }
 
 function serializeState(forPeerId) {
   const u = forPeerId ? S.users.get(forPeerId) : null;
-  const includeInvite = canSeeInvite(u);
   return {
     settings: S.settings,
     users: [...S.users.values()],
     messages: S.messages,
     pending: [...S.pending.values()],
-    inviteToken: includeInvite ? S._inviteToken : null
+    inviteToken: canSeeInvite(u) ? S._inviteToken : null
   };
 }
 
@@ -1401,9 +1262,7 @@ function broadcastAll(data, exceptPeerId = null) {
 function broadcastInviteToken() {
   for (const [pid, conn] of S.conns) {
     const u = S.users.get(pid); if (!u) continue;
-    if (canSeeInvite(u)) {
-      try { conn.send({ type: 'invite-token-update', inviteToken: S._inviteToken }); } catch {}
-    }
+    if (canSeeInvite(u)) try { conn.send({ type: 'invite-token-update', inviteToken: S._inviteToken }); } catch {}
   }
 }
 function addMessageLocal(msg) {
@@ -1424,17 +1283,11 @@ function addSystemMessageLocal(text) {
 function updateRelayTags() {
   const ids = new Set(S.pending.keys());
   for (const m of S.messages) {
-    if (m.relayPending && !ids.has(m.relayPending) && m.relayPending !== 'pending-' + m.id) {
-      delete m.relayPending;
-      persistMessage(m);
-    }
+    if (m.relayPending && !ids.has(m.relayPending) && m.relayPending !== 'pending-' + m.id) { delete m.relayPending; persistMessage(m); }
   }
   renderMessages(); renderPending();
 }
 
-/* ============================================================
-   TYPING + BOT THINKING
-   ============================================================ */
 let _myTypingSent = 0;
 function notifyTyping() {
   const now = Date.now();
@@ -1447,34 +1300,16 @@ function notifyTyping() {
 }
 function showTyping(peerId, name) {
   clearTimeout(S._typingTimers.get(peerId));
-  S._typingTimers.set(peerId, setTimeout(() => {
-    S._typingTimers.delete(peerId);
-    renderTypingLine();
-  }, TYPING_TIMEOUT_MS));
+  S._typingTimers.set(peerId, setTimeout(() => { S._typingTimers.delete(peerId); renderTypingLine(); }, TYPING_TIMEOUT_MS));
   renderTypingLine();
 }
-function clearTyping(peerId) {
-  clearTimeout(S._typingTimers.get(peerId));
-  S._typingTimers.delete(peerId);
-  renderTypingLine();
-}
+function clearTyping(peerId) { clearTimeout(S._typingTimers.get(peerId)); S._typingTimers.delete(peerId); renderTypingLine(); }
 function renderTypingLine() {
   const line = $('typingLine'); if (!line) return;
   const names = [];
-  for (const pid of S._typingTimers.keys()) {
-    const u = S.users.get(pid);
-    if (u) names.push(u.name);
-  }
-  let text = '';
-  if (names.length) {
-    text = names.length === 1
-      ? `${names[0]} está digitando...`
-      : `${names.slice(0, 2).join(', ')}${names.length > 2 ? ' e outros' : ''} estão digitando...`;
-  }
-  const thinkingNames = [];
-  for (const [botId, botName] of S._botThinking) {
-    thinkingNames.push(typeof botName === 'string' ? botName : (findBot(botId)?.name || 'Bot'));
-  }
+  for (const pid of S._typingTimers.keys()) { const u = S.users.get(pid); if (u) names.push(u.name); }
+  let text = names.length ? (names.length === 1 ? `${names[0]} está digitando...` : `${names.slice(0, 2).join(', ')}${names.length > 2 ? ' e outros' : ''} estão digitando...`) : '';
+  const thinkingNames = [...S._botThinking.values()].map(n => typeof n === 'string' ? n : 'Bot');
   if (thinkingNames.length) {
     const thinkText = thinkingNames.map(n => `🤖 ${n} está pensando...`).join('  ');
     text = text ? text + '  ·  ' + thinkText : thinkText;
@@ -1482,121 +1317,60 @@ function renderTypingLine() {
   line.innerHTML = text ? `<span class="${thinkingNames.length ? 'ai-thinking' : ''}">${escapeHtml(text)}</span>` : '';
 }
 
-/* ============================================================
-   BACKGROUND
-   ============================================================ */
 function applyBackground() {
   const el = $('messages'); if (!el) return;
   const bg = S.settings.background || '';
-  if (bg) {
-    el.classList.add('has-bg');
-    el.style.backgroundImage = `linear-gradient(rgba(15,15,16,0.6), rgba(15,15,16,0.6)), url("${bg}")`;
-  } else {
-    el.classList.remove('has-bg');
-    el.style.backgroundImage = '';
-  }
+  if (bg) { el.classList.add('has-bg'); el.style.backgroundImage = `linear-gradient(rgba(15,15,16,0.6), rgba(15,15,16,0.6)), url("${bg}")`; }
+  else { el.classList.remove('has-bg'); el.style.backgroundImage = ''; }
 }
-
 function updateBackgroundPreview() {
   const el = $('bgPreview'); if (!el) return;
   const bg = S.settings.background || '';
-  if (bg) {
-    el.style.backgroundImage = `url("${bg}")`;
-    el.textContent = '';
-    el.style.color = 'transparent';
-  } else {
-    el.style.backgroundImage = '';
-    el.textContent = 'sem imagem';
-    el.style.color = '#666';
-  }
+  if (bg) { el.style.backgroundImage = `url("${bg}")`; el.textContent = ''; el.style.color = 'transparent'; }
+  else { el.style.backgroundImage = ''; el.textContent = 'sem imagem'; el.style.color = '#666'; }
 }
-
 $('bgFile').onchange = async (e) => {
-  const file = e.target.files?.[0];
-  e.target.value = '';
-  if (!file) return;
-  if (!hasPerm('manageSettings')) return alert('Sem permissão.');
+  const file = e.target.files?.[0]; e.target.value = '';
+  if (!file || !hasPerm('manageSettings')) return;
   try {
     const dataUrl = await fileToResizedDataUrl(file, 1280, 0.65);
-    if (dataUrl.length > BG_MAX_BYTES) {
-      if (!confirm(`Imagem com ${(dataUrl.length/1024).toFixed(0)}KB. Enviar mesmo assim?`)) return;
-    }
+    if (dataUrl.length > BG_MAX_BYTES && !confirm(`Imagem ${(dataUrl.length/1024).toFixed(0)}KB. Enviar mesmo assim?`)) return;
     saveSettings({ background: dataUrl });
-  } catch (err) {
-    alert('Não foi possível processar a imagem.\n\n' + (err?.message || err));
-  }
+  } catch (err) { alert('Erro ao processar imagem: ' + (err?.message || err)); }
 };
-
 $('bgClearBtn').onclick = () => {
-  if (!hasPerm('manageSettings')) return;
-  if (!S.settings.background) return;
-  if (!confirm('Remover o background da sala?')) return;
+  if (!hasPerm('manageSettings') || !S.settings.background) return;
+  if (!confirm('Remover o background?')) return;
   saveSettings({ background: '' });
 };
 
-/* ============================================================
-   CONVITE
-   ============================================================ */
 function updateInviteDisplay() {
-  const display = $('roomCodeDisplay');
-  const copyBtn = $('copyCodeBtn');
-  const meta = $('inviteMeta');
+  const display = $('roomCodeDisplay'), copyBtn = $('copyCodeBtn'), meta = $('inviteMeta');
   if (!display) return;
-  if (!hasPerm('shareInvite') || !S._inviteToken) {
-    display.textContent = '🔒 oculto';
-    display.classList.add('hidden');
-    copyBtn.style.display = 'none';
-    meta.style.display = 'none';
-    return;
-  }
-  display.classList.remove('hidden');
-  copyBtn.style.display = 'inline-block';
-  meta.style.display = 'flex';
+  if (!hasPerm('shareInvite') || !S._inviteToken) { display.textContent = '🔒 oculto'; display.classList.add('hidden'); copyBtn.style.display = 'none'; meta.style.display = 'none'; return; }
+  display.classList.remove('hidden'); copyBtn.style.display = 'inline-block'; meta.style.display = 'flex';
   display.textContent = getCurrentInviteCode();
 }
 function updateSettingsInviteDisplay() {
-  const codeEl = $('inviteCodeDisplay');
-  if (!codeEl) return;
-  if (!hasPerm('shareInvite')) { codeEl.textContent = '🔒 oculto'; return; }
-  codeEl.textContent = getCurrentInviteCode();
+  const codeEl = $('inviteCodeDisplay'); if (!codeEl) return;
+  codeEl.textContent = hasPerm('shareInvite') ? getCurrentInviteCode() : '🔒 oculto';
 }
-$('copyCodeBtn').onclick = () => {
-  if (!hasPerm('shareInvite')) return;
-  safeCopy(getCurrentInviteCode());
-  const b = $('copyCodeBtn'); b.textContent = '✓'; setTimeout(() => b.textContent = '📋', 1200);
-};
-$('copyInviteLinkBtn').onclick = () => {
-  if (!hasPerm('shareInvite')) return;
-  safeCopy(location.origin + location.pathname + '#' + getCurrentInviteCode());
-  const b = $('copyInviteLinkBtn'); b.textContent = '✓ copiado'; setTimeout(() => b.textContent = '🔗 Copiar link de convite', 1500);
-};
-$('copyInviteLinkBtnModal').onclick = () => {
-  if (!hasPerm('shareInvite')) return;
-  safeCopy(location.origin + location.pathname + '#' + getCurrentInviteCode());
-  const b = $('copyInviteLinkBtnModal'); b.textContent = '✓'; setTimeout(() => b.textContent = '🔗 Copiar link', 1200);
-};
-$('copyInviteCodeBtn').onclick = () => {
-  if (!hasPerm('shareInvite')) return;
-  safeCopy(getCurrentInviteCode());
-  const b = $('copyInviteCodeBtn'); b.textContent = '✓'; setTimeout(() => b.textContent = '📋 Copiar', 1200);
-};
+$('copyCodeBtn').onclick = () => { if (!hasPerm('shareInvite')) return; safeCopy(getCurrentInviteCode()); const b = $('copyCodeBtn'); b.textContent = '✓'; setTimeout(() => b.textContent = '📋', 1200); };
+$('copyInviteLinkBtn').onclick = () => { if (!hasPerm('shareInvite')) return; safeCopy(location.origin + location.pathname + '#' + getCurrentInviteCode()); const b = $('copyInviteLinkBtn'); b.textContent = '✓'; setTimeout(() => b.textContent = '🔗 Copiar link de convite', 1500); };
+$('copyInviteLinkBtnModal').onclick = () => { if (!hasPerm('shareInvite')) return; safeCopy(location.origin + location.pathname + '#' + getCurrentInviteCode()); const b = $('copyInviteLinkBtnModal'); b.textContent = '✓'; setTimeout(() => b.textContent = '🔗 Copiar link', 1200); };
+$('copyInviteCodeBtn').onclick = () => { if (!hasPerm('shareInvite')) return; safeCopy(getCurrentInviteCode()); const b = $('copyInviteCodeBtn'); b.textContent = '✓'; setTimeout(() => b.textContent = '📋 Copiar', 1200); };
 $('renewInviteBtn').onclick = () => {
   if (!hasPerm('shareInvite')) return;
-  if (!confirm('🔄 Renovar código de convite?\n\n• O código atual será INVALIDADO\n• Quem está dentro continua\n• Novos precisarão do novo código')) return;
+  if (!confirm('Renovar o código? O atual será invalidado.')) return;
   requestAction({ name: 'renew-invite' });
 };
 function doRenewInvite() {
   S._inviteToken = genInviteToken();
-  persistRoom();
-  broadcastInviteToken();
-  updateInviteDisplay();
-  updateSettingsInviteDisplay();
+  persistRoom(); broadcastInviteToken();
+  updateInviteDisplay(); updateSettingsInviteDisplay();
   addSystemMessageHost('🔄 Código de convite renovado.');
 }
 
-/* ============================================================
-   ENTER / PERMISSIONS
-   ============================================================ */
 function enterRoom() {
   showScreen('app');
   applySettings(); renderUsers(); renderMessages(); renderPending(); applyMyPermissions();
@@ -1631,14 +1405,9 @@ function applySettings() {
   updateBackgroundPreview();
 }
 
-/* ============================================================
-   RENDER USERS
-   ============================================================ */
 function renderUsers() {
   const ul = $('userList'); ul.innerHTML = '';
-  const canKick = hasPerm('kickUsers');
-  const canBan = hasPerm('banUsers');
-  const canMute = hasPerm('muteUsers');
+  const canKick = hasPerm('kickUsers'), canBan = hasPerm('banUsers'), canMute = hasPerm('muteUsers');
   const order = { operator: 0, admin: 1, user: 2 };
   const users = [...S.users.values()].sort((a, b) => {
     const aOn = a.online !== false, bOn = b.online !== false;
@@ -1648,23 +1417,21 @@ function renderUsers() {
   });
   for (const u of users) {
     const isOffline = u.online === false;
-    const li = document.createElement('li');
-    li.className = 'user-item' + (isOffline ? ' offline' : '');
-    const span = document.createElement('span'); span.className = 'user-name';
-    span.textContent = u.name;
+    const li = document.createElement('li'); li.className = 'user-item' + (isOffline ? ' offline' : '');
+    const span = document.createElement('span'); span.className = 'user-name'; span.textContent = u.name;
     if (isOffline) { const ob = document.createElement('span'); ob.className = 'user-offline-badge'; ob.textContent = 'offline'; span.appendChild(ob); }
     if (u.muted) { const mb = document.createElement('span'); mb.className = 'user-muted'; mb.textContent = '🔇'; span.appendChild(mb); }
     if (S._typingTimers.has(u.id)) { const t = document.createElement('span'); t.className = 'user-typing'; t.textContent = '✏️'; span.appendChild(t); }
     li.appendChild(span);
     if (u.role === 'operator') { const r = document.createElement('span'); r.className = 'user-role role-op'; r.textContent = 'op'; li.appendChild(r); }
     else if (u.role === 'admin') { const r = document.createElement('span'); r.className = 'user-role role-admin'; r.textContent = 'adm'; li.appendChild(r); }
-    const canModerateThis = u.id !== S.peer.id && u.role !== 'operator';
-    if (canModerateThis) {
-      const targetIsAdmin = u.role === 'admin';
-      const allowedToMod = isOperator() || !targetIsAdmin;
-      if (allowedToMod && canKick) { const kb = document.createElement('button'); kb.className = 'mod-btn kick'; kb.title = 'Expulsar'; kb.textContent = '✕'; kb.onclick = () => kickUser(u.id); li.appendChild(kb); }
-      if (allowedToMod && canBan)  { const bb = document.createElement('button'); bb.className = 'mod-btn ban'; bb.title = 'Banir'; bb.textContent = '🚫'; bb.onclick = () => banUser(u.id); li.appendChild(bb); }
-      if (allowedToMod && canMute && !isOffline) { const mb = document.createElement('button'); mb.className = 'mod-btn mute'; mb.title = u.muted ? 'Dessilenciar' : 'Silenciar'; mb.textContent = u.muted ? '🔊' : '🔇'; mb.onclick = () => toggleMuteUser(u.id); li.appendChild(mb); }
+    const canModThis = u.id !== S.peer.id && u.role !== 'operator';
+    if (canModThis) {
+      const isAdmin = u.role === 'admin';
+      const allowed = isOperator() || !isAdmin;
+      if (allowed && canKick) { const kb = document.createElement('button'); kb.className = 'mod-btn kick'; kb.title = 'Expulsar'; kb.textContent = '✕'; kb.onclick = () => kickUser(u.id); li.appendChild(kb); }
+      if (allowed && canBan) { const bb = document.createElement('button'); bb.className = 'mod-btn ban'; bb.title = 'Banir'; bb.textContent = '🚫'; bb.onclick = () => banUser(u.id); li.appendChild(bb); }
+      if (allowed && canMute && !isOffline) { const mb = document.createElement('button'); mb.className = 'mod-btn mute'; mb.title = u.muted ? 'Dessilenciar' : 'Silenciar'; mb.textContent = u.muted ? '🔊' : '🔇'; mb.onclick = () => toggleMuteUser(u.id); li.appendChild(mb); }
     }
     ul.appendChild(li);
   }
@@ -1673,8 +1440,8 @@ function renderUsers() {
 
 function kickUser(peerId) {
   const u = S.users.get(peerId); if (!u) return;
-  const extra = u.online === false ? '\n\nO usuário está offline.' : '';
-  if (!confirm(`Expulsar ${u.name} da sala?${extra}\n\nEle perderá o acesso e precisará de um novo código de convite.`)) return;
+  const extra = u.online === false ? ' (offline)' : '';
+  if (!confirm(`Expulsar ${u.name}${extra}?`)) return;
   requestAction({ name: 'kick', targetId: peerId });
 }
 function doKickUser(peerId) {
@@ -1682,70 +1449,37 @@ function doKickUser(peerId) {
   for (const [tok, data] of [...S._resumeTokens]) if (data.deviceId === u.deviceId) S._resumeTokens.delete(tok);
   const conn = S.conns.get(peerId);
   if (conn) { try { conn.send({ type: 'kick', reason: 'Removido pelo operador/admin.' }); } catch {} setTimeout(() => { try { conn.close(); } catch {} }, 300); }
-  S.conns.delete(peerId); S.users.delete(peerId); S._rateLimit.delete(peerId);
-  clearTyping(peerId);
-  persistRoom();
-  broadcastAll({ type: 'users-update', users: [...S.users.values()] });
-  addSystemMessageHost(`${u.name} foi removido da sala.`);
+  S.conns.delete(peerId); S.users.delete(peerId); S._rateLimit.delete(peerId); clearTyping(peerId);
+  persistRoom(); broadcastAll({ type: 'users-update', users: [...S.users.values()] });
+  addSystemMessageHost(`${u.name} foi removido.`);
   renderUsers(); renderMessages();
   if ($('settingsModal').style.display !== 'none') renderSettingsModal();
 }
-
 function banUser(peerId) {
   const u = S.users.get(peerId); if (!u) return;
-  const reason = prompt(`Banir ${u.name} permanentemente?\n\nMotivo (opcional, visível para o banido):`, '');
+  const reason = prompt(`Banir ${u.name}? Motivo (opcional):`, '');
   if (reason === null) return;
   requestAction({ name: 'ban', targetId: peerId, reason: reason.trim() });
 }
 function doBanUser(peerId, reason) {
-  const u = S.users.get(peerId); if (!u) return;
-  if (!u.deviceId) return sendError(peerId, 'Dispositivo não identificado.');
+  const u = S.users.get(peerId); if (!u || !u.deviceId) return;
   S._bans = S._bans.filter(b => b.deviceId !== u.deviceId);
   S._bans.push({ deviceId: u.deviceId, name: u.name, reason: reason || '', bannedAt: Date.now(), bannedBy: S.myName });
   for (const [tok, data] of [...S._resumeTokens]) if (data.deviceId === u.deviceId) S._resumeTokens.delete(tok);
   const conn = S.conns.get(peerId);
   if (conn) { try { conn.send({ type: 'kick', reason: 'Você foi banido: ' + (reason || 'sem motivo') }); } catch {} setTimeout(() => { try { conn.close(); } catch {} }, 300); }
-  S.conns.delete(peerId); S.users.delete(peerId); S._rateLimit.delete(peerId);
-  clearTyping(peerId);
-  persistRoom();
-  broadcastAll({ type: 'users-update', users: [...S.users.values()] });
+  S.conns.delete(peerId); S.users.delete(peerId); S._rateLimit.delete(peerId); clearTyping(peerId);
+  persistRoom(); broadcastAll({ type: 'users-update', users: [...S.users.values()] });
   addSystemMessageHost(`${u.name} foi banido.`);
   renderUsers();
   if ($('settingsModal').style.display !== 'none') renderSettingsModal();
 }
 function unbanUser(deviceId) { requestAction({ name: 'unban', deviceId }); }
-function doUnban(deviceId) {
-  S._bans = S._bans.filter(b => b.deviceId !== deviceId);
-  persistRoom();
-  if ($('settingsModal').style.display !== 'none') renderSettingsModal();
-}
+function doUnban(deviceId) { S._bans = S._bans.filter(b => b.deviceId !== deviceId); persistRoom(); if ($('settingsModal').style.display !== 'none') renderSettingsModal(); }
+function toggleMuteUser(peerId) { const u = S.users.get(peerId); if (!u) return; requestAction({ name: u.muted ? 'unmute' : 'mute', targetId: peerId }); }
+function doMuteUser(peerId) { const u = S.users.get(peerId); if (!u || u.role === 'operator') return; u.muted = true; for (const [tok, data] of S._resumeTokens) if (data.deviceId === u.deviceId) data.muted = true; persistRoom(); broadcastAll({ type: 'users-update', users: [...S.users.values()] }); renderUsers(); if ($('settingsModal').style.display !== 'none') renderSettingsModal(); }
+function doUnmuteUser(peerId) { const u = S.users.get(peerId); if (!u) return; u.muted = false; for (const [tok, data] of S._resumeTokens) if (data.deviceId === u.deviceId) data.muted = false; persistRoom(); broadcastAll({ type: 'users-update', users: [...S.users.values()] }); renderUsers(); if ($('settingsModal').style.display !== 'none') renderSettingsModal(); }
 
-function toggleMuteUser(peerId) {
-  const u = S.users.get(peerId); if (!u) return;
-  requestAction({ name: u.muted ? 'unmute' : 'mute', targetId: peerId });
-}
-function doMuteUser(peerId) {
-  const u = S.users.get(peerId); if (!u || u.role === 'operator') return;
-  u.muted = true;
-  for (const [tok, data] of S._resumeTokens) if (data.deviceId === u.deviceId) data.muted = true;
-  persistRoom();
-  broadcastAll({ type: 'users-update', users: [...S.users.values()] });
-  renderUsers();
-  if ($('settingsModal').style.display !== 'none') renderSettingsModal();
-}
-function doUnmuteUser(peerId) {
-  const u = S.users.get(peerId); if (!u) return;
-  u.muted = false;
-  for (const [tok, data] of S._resumeTokens) if (data.deviceId === u.deviceId) data.muted = false;
-  persistRoom();
-  broadcastAll({ type: 'users-update', users: [...S.users.values()] });
-  renderUsers();
-  if ($('settingsModal').style.display !== 'none') renderSettingsModal();
-}
-
-/* ============================================================
-   RENDER MESSAGES
-   ============================================================ */
 let _searchQuery = '';
 function renderMessages() {
   const c = $('messages');
@@ -1755,19 +1489,15 @@ function renderMessages() {
   const filter = _searchQuery.toLowerCase();
   for (const m of S.messages) {
     if (m.deleted) continue;
-    if (filter && !(m.text || '').toLowerCase().includes(filter) &&
-        !(m.fromName || '').toLowerCase().includes(filter)) continue;
-    const div = document.createElement('div'); div.className = 'msg ' + m.type;
+    if (filter && !(m.text || '').toLowerCase().includes(filter) && !(m.fromName || '').toLowerCase().includes(filter)) continue;
+    const div = document.createElement('div'); div.className = 'msg ' + m.type + (m.warn ? ' warn' : '');
     const time = new Date(m.ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const delBtn = canDel ? `<button class="del-btn" data-id="${escapeHtml(m.id)}" title="Apagar">✕</button>` : '';
-
     if (m.type === 'system') {
       div.innerHTML = `<span class="text">${escapeHtml(m.text)}</span>`;
     } else if (m.type === 'bot') {
       const vis = getBotVisual(m.botId, m.botEmoji, m.botColor);
-      const nameVisual = vis.avatar
-        ? `<img class="bot-avatar-img" src="${escapeHtml(vis.avatar)}" alt="">`
-        : `<span class="bot-emoji">${escapeHtml(vis.emoji)}</span>`;
+      const nameVisual = vis.avatar ? `<img class="bot-avatar-img" src="${escapeHtml(vis.avatar)}" alt="">` : `<span class="bot-emoji">${escapeHtml(vis.emoji)}</span>`;
       div.style.borderLeft = '3px solid ' + vis.color;
       div.innerHTML =
         `<span class="name" style="color:${escapeHtml(vis.color)}">${nameVisual}${escapeHtml(m.fromName)}</span>` +
@@ -1776,9 +1506,7 @@ function renderMessages() {
         `<div class="text">${escapeHtml(m.text)}</div>` + delBtn;
     } else {
       const vis = getBotVisual(m.relayBotId, m.relayBotEmoji, m.relayBotColor);
-      const relayBotVisual = vis.avatar
-        ? `<img class="bot-avatar-img" src="${escapeHtml(vis.avatar)}" alt="">`
-        : `<span class="bot-emoji">${escapeHtml(vis.emoji)}</span>`;
+      const relayBotVisual = vis.avatar ? `<img class="bot-avatar-img" src="${escapeHtml(vis.avatar)}" alt="">` : `<span class="bot-emoji">${escapeHtml(vis.emoji)}</span>`;
       div.innerHTML =
         `<span class="name">${escapeHtml(m.fromName)}</span>` +
         (m.relayBot ? ` <span class="time">→ <span style="color:${escapeHtml(vis.color)}; display:inline-flex; align-items:center; gap:3px">${relayBotVisual}${escapeHtml(m.relayBot)}</span></span>` : '') +
@@ -1793,30 +1521,11 @@ function renderMessages() {
   if (wasBottom && !filter) c.scrollTop = c.scrollHeight;
 }
 function deleteMessage(msgId) { requestAction({ name: 'delete-msg', msgId }); }
-function doDeleteMessage(msgId) {
-  const m = S.messages.find(x => x.id === msgId); if (!m) return;
-  m.deleted = true; persistMessage(m);
-  broadcastAll({ type: 'delete-msg', msgId }); renderMessages();
-}
+function doDeleteMessage(msgId) { const m = S.messages.find(x => x.id === msgId); if (!m) return; m.deleted = true; persistMessage(m); broadcastAll({ type: 'delete-msg', msgId }); renderMessages(); }
 
-/* ============================================================
-   BUSCA
-   ============================================================ */
-$('searchToggleBtn').onclick = () => {
-  const s = $('searchInput');
-  const showing = s.style.display !== 'none';
-  s.style.display = showing ? 'none' : 'inline-block';
-  if (!showing) s.focus();
-  else { s.value = ''; _searchQuery = ''; renderMessages(); }
-};
-$('searchInput').addEventListener('input', () => {
-  _searchQuery = $('searchInput').value.trim();
-  renderMessages();
-});
+$('searchToggleBtn').onclick = () => { const s = $('searchInput'); const showing = s.style.display !== 'none'; s.style.display = showing ? 'none' : 'inline-block'; if (!showing) s.focus(); else { s.value = ''; _searchQuery = ''; renderMessages(); } };
+$('searchInput').addEventListener('input', () => { _searchQuery = $('searchInput').value.trim(); renderMessages(); });
 
-/* ============================================================
-   RENDER PENDING
-   ============================================================ */
 function renderPending() {
   if (!hasPerm('manageRelay')) { $('pendingCount').textContent = '0'; return; }
   $('pendingCount').textContent = S.pending.size;
@@ -1824,53 +1533,34 @@ function renderPending() {
   if (S.pending.size === 0) { list.innerHTML = '<p class="empty">Nenhum pedido manual pendente.</p>'; return; }
   for (const relay of S.pending.values()) {
     const vis = getBotVisual(relay.botId, relay.botEmoji, relay.botColor);
-    const botLabel = vis.avatar
-      ? `<img class="bot-avatar-img" src="${escapeHtml(vis.avatar)}" alt="">`
-      : `<span>${escapeHtml(vis.emoji)}</span>`;
+    const botLabel = vis.avatar ? `<img class="bot-avatar-img" src="${escapeHtml(vis.avatar)}" alt="">` : `<span>${escapeHtml(vis.emoji)}</span>`;
     const card = document.createElement('div'); card.className = 'pending-card';
     card.style.borderLeftColor = vis.color;
     card.innerHTML = `
-      <div class="pending-meta">
-        <strong>${escapeHtml(relay.userName)}</strong> → <span style="color:${escapeHtml(vis.color)}; display:inline-flex; align-items:center; gap:3px">${botLabel} ${escapeHtml(relay.botName || relay.bot)}</span>
-        ${relay.contextCount ? `<div class="pending-context">Contexto: ${relay.contextCount} turno(s) anteriores</div>` : ''}
-      </div>
+      <div class="pending-meta"><strong>${escapeHtml(relay.userName)}</strong> → <span style="color:${escapeHtml(vis.color)}; display:inline-flex; align-items:center; gap:3px">${botLabel} ${escapeHtml(relay.botName || relay.bot)}</span></div>
       <div class="pending-text">${escapeHtml(relay.text)}</div>
-      <div class="pending-actions">
-        <button class="secondary copy-btn tiny">📋 Copiar</button>
-      </div>
-      <textarea class="pending-response" placeholder="Cole aqui a resposta do bot..."></textarea>
+      <div class="pending-actions"><button class="secondary copy-btn tiny">📋 Copiar</button></div>
+      <textarea class="pending-response" placeholder="Cole a resposta do bot..."></textarea>
       <div class="pending-actions">
         <button class="primary deliver-btn">✅ Entregar como ${escapeHtml(relay.botName || 'bot')}</button>
         <button class="danger cancel-btn">✕ Cancelar</button>
       </div>`;
     const cb = card.querySelector('.copy-btn');
     cb.onclick = () => { safeCopy(relay.text); cb.textContent = '✓'; setTimeout(() => cb.textContent = '📋 Copiar', 1500); };
-    card.querySelector('.deliver-btn').onclick = () => {
-      const t = card.querySelector('.pending-response').value.trim();
-      if (!t) return alert('Cole a resposta.');
-      requestAction({ name: 'deliver-relay', relayId: relay.id, text: t });
-    };
+    card.querySelector('.deliver-btn').onclick = () => { const t = card.querySelector('.pending-response').value.trim(); if (!t) return alert('Cole a resposta.'); requestAction({ name: 'deliver-relay', relayId: relay.id, text: t }); };
     card.querySelector('.cancel-btn').onclick = () => requestAction({ name: 'cancel-relay', relayId: relay.id });
     list.appendChild(card);
   }
 }
-
 function doDeliverRelay(relayId, text) {
   const relay = S.pending.get(relayId); if (!relay) return;
   S.pending.delete(relayId);
   const orig = S.messages.find(m => m.relayPending === relayId);
   if (orig) { delete orig.relayPending; persistMessage(orig); }
-  const botMsg = {
-    id: uuid(), type: 'bot', fromName: relay.botName || relay.bot,
-    botId: relay.botId, botEmoji: relay.botEmoji, botColor: relay.botColor,
-    replyToId: relay.id, replyToName: relay.userName,
-    text: String(text).slice(0, 4000), ts: Date.now(), deliveredBy: S.myName
-  };
-  addMessageLocal(botMsg);
-  broadcastAll({ type: 'chat', msg: botMsg });
+  const botMsg = { id: uuid(), type: 'bot', fromName: relay.botName || relay.bot, botId: relay.botId, botEmoji: relay.botEmoji, botColor: relay.botColor, replyToId: relay.id, replyToName: relay.userName, text: String(text).slice(0, 4000), ts: Date.now(), deliveredBy: S.myName };
+  addMessageLocal(botMsg); broadcastAll({ type: 'chat', msg: botMsg });
   broadcastAll({ type: 'pending-update', pending: [...S.pending.values()] });
-  persistPending(); renderPending(); renderMessages();
-  beep(1046, 0.08, 0.04);
+  persistPending(); renderPending(); renderMessages(); beep(1046, 0.08, 0.04);
 }
 function doCancelRelay(relayId) {
   S.pending.delete(relayId);
@@ -1880,9 +1570,6 @@ function doCancelRelay(relayId) {
   persistPending(); renderPending(); renderMessages();
 }
 
-/* ============================================================
-   TARGET + SPEAK AS BOT
-   ============================================================ */
 function renderTargetSelect() {
   const sel = $('targetSelect'); const prev = sel.value;
   sel.innerHTML = '<option value="">Chat geral (livre)</option>';
@@ -1890,62 +1577,42 @@ function renderTargetSelect() {
   for (const b of online) {
     const o = document.createElement('option');
     o.value = b.id;
-    const tag = b.autoMode ? ' 🤖' : '';
-    o.textContent = `${b.emoji} ${b.name}${!b.online ? ' (offline)' : ''}${b.adminOnly ? ' 🔒' : ''}${tag}`;
+    o.textContent = `${b.emoji} ${b.name}${!b.online ? ' (offline)' : ''}${b.adminOnly ? ' 🔒' : ''}${b.autoMode ? ' 🤖' : ''}`;
     if (b.description) o.title = b.description;
     sel.appendChild(o);
   }
   if (prev && (prev === '' || S.settings.bots.some(b => b.id === prev))) sel.value = prev;
-  updateSpeakAsBotVisibility();
-  updateInputPlaceholder();
+  updateSpeakAsBotVisibility(); updateInputPlaceholder();
 }
 function updateSpeakAsBotVisibility() {
-  const canSpeak = isOperator();
-  const hasBot = !!$('targetSelect').value;
-  const label = $('speakAsBotLabel');
-  const check = $('speakAsBotCheck');
+  const canSpeak = isOperator(), hasBot = !!$('targetSelect').value;
+  const label = $('speakAsBotLabel'), check = $('speakAsBotCheck');
   if (canSpeak && hasBot) label.style.display = 'flex';
   else { label.style.display = 'none'; check.checked = false; S._speakAsBot = false; }
   updateInputAppearance();
 }
 function updateInputAppearance() {
   const active = S._speakAsBot && $('targetSelect').value;
-  const area = $('inputArea');
-  const btn = $('sendBtn');
-  const label = $('speakAsBotLabel');
-  area.classList.toggle('speaking-as-bot', !!active);
-  btn.classList.toggle('speaking-as-bot', !!active);
-  label.classList.toggle('active', !!active);
-  if (active) {
-    const bot = findBot($('targetSelect').value);
-    btn.textContent = `🎭 Enviar como ${bot?.name || 'bot'}`;
-  } else btn.textContent = 'Enviar';
+  $('inputArea').classList.toggle('speaking-as-bot', !!active);
+  $('sendBtn').classList.toggle('speaking-as-bot', !!active);
+  $('speakAsBotLabel').classList.toggle('active', !!active);
+  if (active) { const bot = findBot($('targetSelect').value); $('sendBtn').textContent = `🎭 Enviar como ${bot?.name || 'bot'}`; }
+  else $('sendBtn').textContent = 'Enviar';
 }
 function updateInputPlaceholder() {
   const m = me();
   if (m?.muted && m.role !== 'operator') { $('messageInput').placeholder = '🔇 Você está silenciado.'; return; }
-  const targetBotId = $('targetSelect').value;
-  const isRelay = !!targetBotId;
-  const isSpeaking = S._speakAsBot && isRelay && isOperator();
-  if (isSpeaking) {
-    const bot = findBot(targetBotId);
-    $('messageInput').placeholder = `Falar como ${bot?.emoji || ''} ${bot?.name || 'bot'}...`;
-  } else if (isRelay) {
-    const bot = findBot(targetBotId);
-    const aiTag = bot?.autoMode ? ' [IA]' : ' [fila manual]';
-    $('messageInput').placeholder = bot?.greeting
-      ? `Mensagem para ${bot.emoji} ${bot.name}${aiTag}... (${bot.greeting})`
-      : `Mensagem para ${bot?.emoji || ''} ${bot?.name || ''}${aiTag}...`;
-  } else {
-    $('messageInput').placeholder = 'Digite sua mensagem... (Enter envia, Shift+Enter quebra linha)';
-  }
+  const botId = $('targetSelect').value;
+  const isRelay = !!botId, isSpeaking = S._speakAsBot && isRelay && isOperator();
+  if (isSpeaking) { const bot = findBot(botId); $('messageInput').placeholder = `Falar como ${bot?.emoji || ''} ${bot?.name || 'bot'}...`; }
+  else if (isRelay) { const bot = findBot(botId); $('messageInput').placeholder = bot?.greeting ? `Mensagem para ${bot.emoji} ${bot.name}... (${bot.greeting})` : `Mensagem para ${bot?.emoji || ''} ${bot?.name || ''}${bot?.autoMode ? ' [IA]' : ' [manual]'}...`; }
+  else $('messageInput').placeholder = 'Digite sua mensagem...';
 }
 $('targetSelect').onchange = () => { updateSpeakAsBotVisibility(); updateInputPlaceholder(); };
 $('speakAsBotCheck').onchange = () => {
-  if (!isOperator()) { $('speakAsBotCheck').checked = false; S._speakAsBot = false; return alert('Apenas o criador pode falar como bot.'); }
+  if (!isOperator()) { $('speakAsBotCheck').checked = false; S._speakAsBot = false; return; }
   S._speakAsBot = $('speakAsBotCheck').checked;
-  updateInputAppearance();
-  updateInputPlaceholder();
+  updateInputAppearance(); updateInputPlaceholder();
 };
 function renderQuickMentions() {
   const c = $('quickMentions'); c.innerHTML = '';
@@ -1954,80 +1621,46 @@ function renderQuickMentions() {
   c.style.display = 'flex';
   for (const b of online) {
     const chip = document.createElement('button');
-    chip.className = 'mention-chip' + (b.autoMode ? ' ai' : '');
-    chip.type = 'button';
-    const visual = b.avatar
-      ? `<img class="mention-avatar" src="${escapeHtml(b.avatar)}" alt="">`
-      : `<span>${escapeHtml(b.emoji)}</span>`;
+    chip.className = 'mention-chip' + (b.autoMode ? ' ai' : ''); chip.type = 'button';
+    const visual = b.avatar ? `<img class="mention-avatar" src="${escapeHtml(b.avatar)}" alt="">` : `<span>${escapeHtml(b.emoji)}</span>`;
     chip.innerHTML = `${visual} ${escapeHtml(b.name)}${b.autoMode ? ' 🤖' : ''}`;
-    chip.title = (b.description || 'Falar com esse bot') + (b.autoMode ? ' — IA automática' : ' — fila manual');
-    chip.onclick = () => {
-      $('targetSelect').value = b.id;
-      updateSpeakAsBotVisibility();
-      updateInputPlaceholder();
-      $('messageInput').focus();
-    };
+    chip.title = (b.description || 'Falar com bot') + (b.autoMode ? ' — IA' : ' — manual');
+    chip.onclick = () => { $('targetSelect').value = b.id; updateSpeakAsBotVisibility(); updateInputPlaceholder(); $('messageInput').focus(); };
     c.appendChild(chip);
   }
 }
 
-/* ============================================================
-   ENVIO
-   ============================================================ */
 $('sendBtn').onclick = sendMessage;
-$('messageInput').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-});
-$('messageInput').addEventListener('input', () => {
-  const t = $('messageInput'); t.style.height = 'auto';
-  t.style.height = Math.min(t.scrollHeight, 120) + 'px';
-  notifyTyping();
-});
+$('messageInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+$('messageInput').addEventListener('input', () => { const t = $('messageInput'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 120) + 'px'; notifyTyping(); });
 function sendMessage() {
-  if (me()?.muted && !isOperator()) return alert('🔇 Você está silenciado.');
+  if (me()?.muted && !isOperator()) return;
   const ta = $('messageInput'); const text = ta.value.trim(); if (!text) return;
   const targetBotId = $('targetSelect').value;
   const speakingAsBot = S._speakAsBot && targetBotId;
   ta.value = ''; ta.style.height = 'auto';
   if (speakingAsBot) {
-    if (!isOperator()) return alert('Apenas o criador pode falar como bot.');
-    const bot = findBot(targetBotId); if (!bot) return alert('Bot não encontrado.');
+    if (!isOperator()) return;
+    const bot = findBot(targetBotId); if (!bot) return;
     if (S.isHost) {
-      const botMsg = {
-        id: uuid(), type: 'bot', fromName: bot.name,
-        botId: bot.id, botEmoji: bot.emoji, botColor: bot.color,
-        text, ts: Date.now(), spokenBy: S.myName
-      };
-      addMessageLocal(botMsg);
-      broadcastAll({ type: 'chat', msg: botMsg });
-      beep(1046, 0.05, 0.03);
+      const botMsg = { id: uuid(), type: 'bot', fromName: bot.name, botId: bot.id, botEmoji: bot.emoji, botColor: bot.color, text, ts: Date.now(), spokenBy: S.myName };
+      addMessageLocal(botMsg); broadcastAll({ type: 'chat', msg: botMsg }); beep(1046, 0.05, 0.03);
     } else {
-      const c = S.conns.get('host'); if (!c?.open) return alert('Sem conexão.');
-      c.send({ type: 'speak-as-bot', botId: targetBotId, text });
+      const c = S.conns.get('host'); if (c?.open) c.send({ type: 'speak-as-bot', botId: targetBotId, text });
     }
     $('messageInput').focus(); return;
   }
   if (S.isHost) {
-    if (targetBotId) {
-      const bot = findBot(targetBotId);
-      if (!bot) return alert('Bot não encontrado.');
-      if (!bot.online) return alert(`O bot "${bot.name}" está offline.`);
-      hostHandleRelayRequest(S.peer.id, { botId: targetBotId, text });
-    } else {
-      const msg = { id: uuid(), type: 'user', fromId: S.peer.id, fromName: S.myName, text, ts: Date.now() };
-      addMessageLocal(msg); broadcastAll({ type: 'chat', msg });
-    }
+    if (targetBotId) { const bot = findBot(targetBotId); if (!bot) return; hostHandleRelayRequest(S.peer.id, { botId: targetBotId, text }); }
+    else { const msg = { id: uuid(), type: 'user', fromId: S.peer.id, fromName: S.myName, text, ts: Date.now() }; addMessageLocal(msg); broadcastAll({ type: 'chat', msg }); }
   } else {
-    const c = S.conns.get('host'); if (!c?.open) return alert('Sem conexão.');
+    const c = S.conns.get('host'); if (!c?.open) return;
     if (targetBotId) c.send({ type: 'relay-request', botId: targetBotId, text });
     else c.send({ type: 'chat', text });
   }
   $('messageInput').focus();
 }
 
-/* ============================================================
-   SETTINGS MODAL
-   ============================================================ */
 document.querySelectorAll('.stab').forEach(st => {
   st.onclick = () => {
     if (st.disabled) return;
@@ -2041,18 +1674,8 @@ document.querySelectorAll('.stab').forEach(st => {
     if (target === 'general') updateBackgroundPreview();
   };
 });
-$('settingsBtn').onclick = () => {
-  if (!hasAnyAdminUI()) return;
-  renderSettingsModal();
-  $('settingsModal').style.display = 'flex';
-};
-$('botsQuickBtn').onclick = () => {
-  if (!hasPerm('manageBots')) return;
-  renderSettingsModal();
-  const botsTab = document.querySelector('.stab[data-stab="bots"]');
-  if (botsTab && !botsTab.disabled) botsTab.click();
-  $('settingsModal').style.display = 'flex';
-};
+$('settingsBtn').onclick = () => { if (!hasAnyAdminUI()) return; renderSettingsModal(); $('settingsModal').style.display = 'flex'; };
+$('botsQuickBtn').onclick = () => { if (!hasPerm('manageBots')) return; renderSettingsModal(); const t = document.querySelector('.stab[data-stab="bots"]'); if (t && !t.disabled) t.click(); $('settingsModal').style.display = 'flex'; };
 $('closeSettingsBtn').onclick = () => $('settingsModal').style.display = 'none';
 
 function renderSettingsModal() {
@@ -2060,18 +1683,15 @@ function renderSettingsModal() {
   tabs.forEach(t => {
     switch (t.dataset.stab) {
       case 'general': t.disabled = !hasPerm('manageSettings'); break;
-      case 'invite':  t.disabled = !hasPerm('shareInvite'); break;
-      case 'bots':    t.disabled = !hasPerm('manageBots'); break;
-      case 'users':   t.disabled = !isOperator(); break;
-      case 'bans':    t.disabled = !hasPerm('banUsers'); break;
+      case 'invite': t.disabled = !hasPerm('shareInvite'); break;
+      case 'bots': t.disabled = !hasPerm('manageBots'); break;
+      case 'users': t.disabled = !isOperator(); break;
+      case 'bans': t.disabled = !hasPerm('banUsers'); break;
       case 'history': t.disabled = !hasPerm('manageHistory'); break;
     }
   });
-  const activeTab = document.querySelector('.stab.active');
-  if (activeTab?.disabled) {
-    const first = [...tabs].find(t => !t.disabled);
-    if (first) first.click();
-  }
+  const active = document.querySelector('.stab.active');
+  if (active?.disabled) { const first = [...tabs].find(t => !t.disabled); if (first) first.click(); }
   $('stab-danger').style.display = isOperator() ? 'block' : 'none';
   $('setRoomName').disabled = !hasPerm('manageSettings');
   $('setFreeChat').disabled = !hasPerm('manageSettings');
@@ -2079,10 +1699,7 @@ function renderSettingsModal() {
   $('bgClearBtn').disabled = !hasPerm('manageSettings');
   $('bgUploadLabel').style.opacity = hasPerm('manageSettings') ? '1' : '0.5';
   $('bgUploadLabel').style.pointerEvents = hasPerm('manageSettings') ? 'auto' : 'none';
-  renderBotsList();
-  renderBansList();
-  updateSettingsInviteDisplay();
-  updateBackgroundPreview();
+  renderBotsList(); renderBansList(); updateSettingsInviteDisplay(); updateBackgroundPreview();
   if (isOperator()) renderAdminUsersList();
 }
 
@@ -2093,14 +1710,8 @@ function renderBotsList() {
   for (const bot of S.settings.bots) {
     const row = document.createElement('div'); row.className = 'bot-config-row';
     row.style.borderLeftColor = bot.color;
-
-    const avatarContent = bot.avatar
-      ? `<img src="${escapeHtml(bot.avatar)}" alt="">`
-      : `<span>${escapeHtml(bot.emoji)}</span>`;
-
-    const modelOptions = AI_MODELS.map(m =>
-      `<option value="${m.value}" ${bot.model === m.value ? 'selected' : ''}>${m.label}</option>`
-    ).join('');
+    const avatarContent = bot.avatar ? `<img src="${escapeHtml(bot.avatar)}" alt="">` : `<span>${escapeHtml(bot.emoji)}</span>`;
+    const modelOptions = AI_MODELS.map(m => `<option value="${m.value}" ${bot.model === m.value ? 'selected' : ''}>${m.label}</option>`).join('');
 
     row.innerHTML = `
       <div class="bot-config-header">
@@ -2108,54 +1719,54 @@ function renderBotsList() {
           ${editable ? '<input type="file" class="bot-avatar-file" accept="image/*" style="display:none">' : ''}
           ${avatarContent}
         </label>
-        <input type="text" class="bot-emoji-input" value="${escapeHtml(bot.emoji)}" maxlength="3" title="Emoji (fallback)" style="width:50px; text-align:center; flex:0 0 50px" ${editable ? '' : 'disabled'}>
+        <input type="text" class="bot-emoji-input" value="${escapeHtml(bot.emoji)}" maxlength="3" title="Emoji" style="width:50px; text-align:center; flex:0 0 50px" ${editable ? '' : 'disabled'}>
         <input type="text" class="bot-name-input" value="${escapeHtml(bot.name)}" maxlength="40" ${editable ? '' : 'disabled'}>
         <input type="color" class="bot-color-input" value="${escapeHtml(bot.color)}" style="width:40px; flex:0 0 40px" title="Cor" ${editable ? '' : 'disabled'}>
         <span class="ai-status ${bot.autoMode ? '' : 'off'}" id="aiStatus-${bot.id}">${bot.autoMode ? '🤖 IA' : 'manual'}</span>
-        ${editable ? '<button class="icon-btn remove-bot" title="Remover bot">🗑️</button>' : ''}
+        ${editable ? '<button class="icon-btn remove-bot" title="Remover">🗑️</button>' : ''}
       </div>
 
       <div class="ai-toggle-row ${bot.autoMode ? '' : 'off'}">
         <input type="checkbox" class="bot-automode-input" id="autoMode-${bot.id}" ${bot.autoMode ? 'checked' : ''} ${editable ? '' : 'disabled'}>
         <label for="autoMode-${bot.id}" style="margin:0; cursor:pointer; font-weight:600">🤖 IA Automática</label>
-        <span style="margin-left:auto; font-size:11px; opacity:0.7">${bot.autoMode ? 'Pollinations AI responde sozinho' : 'Fila manual (você responde)'}</span>
+        <span style="margin-left:auto; font-size:11px; opacity:0.7">${bot.autoMode ? 'Pollinations responde sozinho' : 'Fila manual'}</span>
       </div>
 
       <div class="bot-config-grid">
         <div class="full">
-          <label>Descrição curta (mostrada nos chips e dropdown)</label>
+          <label>Descrição curta</label>
           <input type="text" class="bot-desc-input" value="${escapeHtml(bot.description || '')}" maxlength="120" ${editable ? '' : 'disabled'}>
         </div>
         <div class="full">
-          <label>💭 Personalidade (quem ele é, como fala, manias)</label>
-          <textarea class="bot-personality-input" rows="4" placeholder="Ex: Sou uma elfa arqueira de 300 anos. Falo de forma direta e um pouco sarcástica. Odeio magia e confio mais em flechas. Tenho cicatriz no olho esquerdo..." ${editable ? '' : 'disabled'}>${escapeHtml(bot.personality || '')}</textarea>
+          <label>💭 Personalidade</label>
+          <textarea class="bot-personality-input" rows="4" placeholder="Ex: Sou uma elfa arqueira de 300 anos. Falo de forma direta e um pouco sarcástica..." ${editable ? '' : 'disabled'}>${escapeHtml(bot.personality || '')}</textarea>
         </div>
         <div class="full">
-          <label>🌍 Cenário / Mundo (onde a história acontece)</label>
-          <textarea class="bot-scenario-input" rows="3" placeholder="Ex: Floresta de Eldoria, anoitecer. O grupo está fugindo de caçadores. Você conhece cada árvore do local..." ${editable ? '' : 'disabled'}>${escapeHtml(bot.scenario || '')}</textarea>
+          <label>🌍 Cenário / Mundo</label>
+          <textarea class="bot-scenario-input" rows="3" placeholder="Ex: Floresta de Eldoria, anoitecer. O grupo está fugindo..." ${editable ? '' : 'disabled'}>${escapeHtml(bot.scenario || '')}</textarea>
         </div>
         <div class="full">
-          <label>💬 Exemplos de diálogo (opcional, mas ajuda muito)</label>
-          <textarea class="bot-examples-input" rows="3" placeholder="Ex:&#10;Jogador: Me ajuda?&#10;Bot: *encosta na árvore* Depende do que você oferece em troca.&#10;Jogador: Tenho moedas.&#10;Bot: *ri* Moedas não compram flechas mágicas, forasteiro." ${editable ? '' : 'disabled'}>${escapeHtml(bot.examples || '')}</textarea>
+          <label>💬 Exemplos de diálogo</label>
+          <textarea class="bot-examples-input" rows="3" placeholder="Ex:&#10;Jogador: Me ajuda?&#10;Bot: *encosta na árvore* Depende do que oferece em troca." ${editable ? '' : 'disabled'}>${escapeHtml(bot.examples || '')}</textarea>
         </div>
         <div class="full">
-          <label>Greeting / dica inicial (opcional, mostrado no placeholder)</label>
+          <label>Greeting / dica inicial</label>
           <input type="text" class="bot-greet-input" value="${escapeHtml(bot.greeting || '')}" maxlength="200" ${editable ? '' : 'disabled'}>
         </div>
         <div>
-          <label>Modelo de IA</label>
+          <label>Modelo</label>
           <select class="bot-model-input" ${editable ? '' : 'disabled'}>${modelOptions}</select>
         </div>
         <div>
-          <label>Temperatura (criatividade: ${bot.temperature})</label>
+          <label>Temperatura (${bot.temperature})</label>
           <input type="range" class="bot-temp-input" min="0" max="1.5" step="0.1" value="${bot.temperature}" ${editable ? '' : 'disabled'}>
         </div>
         <div>
-          <label>Máx. histórico (mensagens de contexto)</label>
+          <label>Máx. histórico</label>
           <input type="number" class="bot-maxhistory-input" value="${bot.maxHistory || 20}" min="4" max="40" ${editable ? '' : 'disabled'}>
         </div>
         <div>
-          <label>Máx. pedidos na fila manual</label>
+          <label>Máx. fila manual</label>
           <input type="number" class="bot-maxpending-input" value="${bot.maxPending}" min="1" max="20" ${editable ? '' : 'disabled'}>
         </div>
         <div style="grid-column: 1 / -1; flex-direction: row; gap: 12px; margin-top: 4px">
@@ -2165,10 +1776,11 @@ function renderBotsList() {
       </div>
 
       <div class="bot-config-footer">
-        <button class="secondary test-ai-btn tiny" title="Testa a API com a personalidade atual">⚡ Testar IA</button>
+        <button class="secondary test-ai-btn tiny" title="Testa a IA sem pop-up">⚡ Testar IA</button>
         <button class="secondary speak-btn tiny">🎭 Falar como bot</button>
         ${editable && bot.avatar ? '<button class="secondary remove-avatar tiny">🗑️ Remover avatar</button>' : ''}
-      </div>`;
+      </div>
+      <div class="ai-test-result" id="aiTestResult-${bot.id}"></div>`;
 
     if (editable) {
       row.querySelector('.bot-name-input').onchange = (e) => updateBot(bot.id, { name: e.target.value.trim().slice(0, 40) || 'Bot' });
@@ -2180,10 +1792,7 @@ function renderBotsList() {
       row.querySelector('.bot-examples-input').onchange = (e) => updateBot(bot.id, { examples: e.target.value.slice(0, 3000) });
       row.querySelector('.bot-greet-input').onchange = (e) => updateBot(bot.id, { greeting: e.target.value.trim().slice(0, 200) });
       row.querySelector('.bot-model-input').onchange = (e) => updateBot(bot.id, { model: e.target.value });
-      row.querySelector('.bot-temp-input').oninput = (e) => {
-        const lbl = e.target.previousElementSibling;
-        lbl.textContent = `Temperatura (criatividade: ${e.target.value})`;
-      };
+      row.querySelector('.bot-temp-input').oninput = (e) => { e.target.previousElementSibling.textContent = `Temperatura (${e.target.value})`; };
       row.querySelector('.bot-temp-input').onchange = (e) => updateBot(bot.id, { temperature: Number(e.target.value) });
       row.querySelector('.bot-maxhistory-input').onchange = (e) => updateBot(bot.id, { maxHistory: Math.max(4, Math.min(40, parseInt(e.target.value) || 20)) });
       row.querySelector('.bot-maxpending-input').onchange = (e) => updateBot(bot.id, { maxPending: Math.max(1, Math.min(20, parseInt(e.target.value) || 3)) });
@@ -2192,77 +1801,36 @@ function renderBotsList() {
       row.querySelector('.bot-automode-input').onchange = (e) => {
         const enabled = e.target.checked;
         if (enabled && !bot.personality && !bot.scenario) {
-          if (!confirm(`O bot "${bot.name}" ainda não tem personalidade nem cenário configurados.\n\nA IA vai responder de forma genérica. Quer continuar?`)) {
-            e.target.checked = false; return;
-          }
+          if (!confirm(`O bot "${bot.name}" não tem personalidade nem cenário. Vai responder genérico. Continuar?`)) { e.target.checked = false; return; }
         }
         updateBot(bot.id, { autoMode: enabled });
       };
-      row.querySelector('.remove-bot').onclick = () => {
-        if (!confirm(`Remover o bot "${bot.name}"?`)) return;
-        saveSettings({ bots: S.settings.bots.filter(b => b.id !== bot.id) });
-      };
+      row.querySelector('.remove-bot').onclick = () => { if (!confirm(`Remover "${bot.name}"?`)) return; saveSettings({ bots: S.settings.bots.filter(b => b.id !== bot.id) }); };
       const avatarFile = row.querySelector('.bot-avatar-file');
-      if (avatarFile) {
-        avatarFile.onchange = async (e) => {
-          const file = e.target.files?.[0];
-          e.target.value = '';
-          if (!file) return;
-          try {
-            const dataUrl = await fileToResizedDataUrl(file, 128, 0.8);
-            if (dataUrl.length > AVATAR_MAX_BYTES) return alert(`Muito grande: ${(dataUrl.length/1024).toFixed(0)}KB. Máx ${(AVATAR_MAX_BYTES/1024).toFixed(0)}KB.`);
-            updateBot(bot.id, { avatar: dataUrl });
-          } catch (err) { alert('Erro: ' + (err?.message || err)); }
-        };
-      }
+      if (avatarFile) avatarFile.onchange = async (e) => {
+        const file = e.target.files?.[0]; e.target.value = '';
+        if (!file) return;
+        try { const dataUrl = await fileToResizedDataUrl(file, 128, 0.8); if (dataUrl.length > AVATAR_MAX_BYTES) return alert(`Imagem muito grande: ${(dataUrl.length/1024).toFixed(0)}KB`); updateBot(bot.id, { avatar: dataUrl }); }
+        catch (err) { alert('Erro: ' + (err?.message || err)); }
+      };
       const removeAvatarBtn = row.querySelector('.remove-avatar');
-      if (removeAvatarBtn) {
-        removeAvatarBtn.onclick = () => {
-          if (!confirm(`Remover avatar de "${bot.name}"?`)) return;
-          updateBot(bot.id, { avatar: '' });
-        };
-      }
+      if (removeAvatarBtn) removeAvatarBtn.onclick = () => { if (!confirm(`Remover avatar?`)) return; updateBot(bot.id, { avatar: '' }); };
     }
 
-    /* Testar IA — só faz sentido se o modelo estiver preenchido (sempre está) */
-    row.querySelector('.test-ai-btn').onclick = async () => {
-      const statusEl = document.getElementById('aiStatus-' + bot.id);
-      await testBotAI(bot, statusEl);
-      /* Atualiza o status visual depois do teste */
-      const curBot = findBot(bot.id);
-      if (statusEl && curBot) {
-        statusEl.textContent = curBot.autoMode ? '🤖 IA' : 'manual';
-        statusEl.className = 'ai-status ' + (curBot.autoMode ? '' : 'off');
-      }
-    };
+    /* ⚠️ CORREÇÃO: teste inline, sem alert */
+    row.querySelector('.test-ai-btn').onclick = () => testBotAI(bot);
 
     const speakBtn = row.querySelector('.speak-btn');
-    if (canSpeakAsBot) {
-      speakBtn.onclick = () => {
-        $('settingsModal').style.display = 'none';
-        $('targetSelect').value = bot.id;
-        S._speakAsBot = true;
-        $('speakAsBotCheck').checked = true;
-        updateSpeakAsBotVisibility();
-        $('messageInput').focus();
-      };
-    } else speakBtn.style.display = 'none';
+    if (canSpeakAsBot) speakBtn.onclick = () => { $('settingsModal').style.display = 'none'; $('targetSelect').value = bot.id; S._speakAsBot = true; $('speakAsBotCheck').checked = true; updateSpeakAsBotVisibility(); $('messageInput').focus(); };
+    else speakBtn.style.display = 'none';
 
     c.appendChild(row);
   }
   $('newBotName').style.display = editable ? 'block' : 'none';
   $('addBotBtn').style.display = editable ? 'inline-block' : 'none';
 }
-function updateBot(botId, patch) {
-  const bots = S.settings.bots.map(b => b.id === botId ? { ...b, ...patch } : b);
-  saveSettings({ bots });
-}
-$('addBotBtn').onclick = () => {
-  const n = $('newBotName').value.trim().slice(0, 40); if (!n) return;
-  if (S.settings.bots.length >= MAX_BOTS) return alert('Máximo ' + MAX_BOTS + ' bots.');
-  $('newBotName').value = '';
-  saveSettings({ bots: [...S.settings.bots, makeBot(n)] });
-};
+function updateBot(botId, patch) { const bots = S.settings.bots.map(b => b.id === botId ? { ...b, ...patch } : b); saveSettings({ bots }); }
+$('addBotBtn').onclick = () => { const n = $('newBotName').value.trim().slice(0, 40); if (!n) return; if (S.settings.bots.length >= MAX_BOTS) return alert('Máx ' + MAX_BOTS); $('newBotName').value = ''; saveSettings({ bots: [...S.settings.bots, makeBot(n)] }); };
 
 function renderBansList() {
   const c = $('bansList'); c.innerHTML = '';
@@ -2271,16 +1839,10 @@ function renderBansList() {
     const row = document.createElement('div'); row.className = 'ban-row';
     const date = new Date(ban.bannedAt).toLocaleString('pt-BR');
     row.innerHTML = `
-      <div class="ban-header">
-        <span class="ban-name">${escapeHtml(ban.name || 'Desconhecido')}</span>
-        <span class="ban-tag">BANIDO</span>
-      </div>
-      <div class="ban-meta">Motivo: ${escapeHtml(ban.reason || 'não informado')}<br>Por <b>${escapeHtml(ban.bannedBy || '—')}</b> em ${escapeHtml(date)}</div>
+      <div class="ban-header"><span class="ban-name">${escapeHtml(ban.name || 'Desconhecido')}</span><span class="ban-tag">BANIDO</span></div>
+      <div class="ban-meta">Motivo: ${escapeHtml(ban.reason || '—')}<br>Por <b>${escapeHtml(ban.bannedBy || '—')}</b> em ${escapeHtml(date)}</div>
       <button class="secondary unban-btn">Desbanir</button>`;
-    row.querySelector('.unban-btn').onclick = () => {
-      if (!confirm(`Desbanir ${ban.name}?`)) return;
-      unbanUser(ban.deviceId);
-    };
+    row.querySelector('.unban-btn').onclick = () => { if (!confirm(`Desbanir ${ban.name}?`)) return; unbanUser(ban.deviceId); };
     c.appendChild(row);
   }
 }
@@ -2306,18 +1868,11 @@ function renderAdminUsersList() {
         const lab = document.createElement('label');
         const cb = document.createElement('input');
         cb.type = 'checkbox'; cb.checked = !!u.perms?.[k];
-        cb.onchange = () => {
-          const cur = S.users.get(u.id); if (!cur) return;
-          const newPerms = { ...(cur.perms || {}), [k]: cb.checked };
-          requestAction({ name: 'promote', targetId: u.id, perms: newPerms });
-        };
+        cb.onchange = () => { const cur = S.users.get(u.id); if (!cur) return; const newPerms = { ...(cur.perms || {}), [k]: cb.checked }; requestAction({ name: 'promote', targetId: u.id, perms: newPerms }); };
         lab.appendChild(cb); lab.appendChild(document.createTextNode(label));
         permsBox.appendChild(lab);
       }
-      row.querySelector('.demote-btn').onclick = () => {
-        if (!confirm(`Rebaixar ${u.name}?`)) return;
-        requestAction({ name: 'demote', targetId: u.id });
-      };
+      row.querySelector('.demote-btn').onclick = () => { if (!confirm(`Rebaixar ${u.name}?`)) return; requestAction({ name: 'demote', targetId: u.id }); };
     } else {
       row.innerHTML = `
         <div class="admin-user-header">
@@ -2331,87 +1886,29 @@ function renderAdminUsersList() {
   }
   if (!c.children.length) c.innerHTML = '<p class="empty">Nenhum outro participante.</p>';
 }
-function doPromote(targetId, perms) {
-  const u = S.users.get(targetId); if (!u || u.role === 'operator') return;
-  u.role = 'admin'; u.perms = { ...(perms || {}) };
-  S._adminNames.set(u.name.toLowerCase(), u.perms);
-  for (const [tok, data] of S._resumeTokens) if (data.deviceId === u.deviceId) { data.role = 'admin'; data.perms = u.perms; }
-  persistRoom();
-  broadcastAll({ type: 'users-update', users: [...S.users.values()] });
-  broadcastInviteToken();
-  renderUsers(); renderSettingsModal();
-}
-function doDemote(targetId) {
-  const u = S.users.get(targetId); if (!u || u.role === 'operator') return;
-  S._adminNames.delete(u.name.toLowerCase());
-  u.role = 'user'; u.perms = {};
-  for (const [tok, data] of S._resumeTokens) if (data.deviceId === u.deviceId) { data.role = 'user'; data.perms = {}; }
-  persistRoom();
-  broadcastAll({ type: 'users-update', users: [...S.users.values()] });
-  renderUsers(); renderSettingsModal();
-}
+function doPromote(targetId, perms) { const u = S.users.get(targetId); if (!u || u.role === 'operator') return; u.role = 'admin'; u.perms = { ...(perms || {}) }; S._adminNames.set(u.name.toLowerCase(), u.perms); for (const [tok, data] of S._resumeTokens) if (data.deviceId === u.deviceId) { data.role = 'admin'; data.perms = u.perms; } persistRoom(); broadcastAll({ type: 'users-update', users: [...S.users.values()] }); broadcastInviteToken(); renderUsers(); renderSettingsModal(); }
+function doDemote(targetId) { const u = S.users.get(targetId); if (!u || u.role === 'operator') return; S._adminNames.delete(u.name.toLowerCase()); u.role = 'user'; u.perms = {}; for (const [tok, data] of S._resumeTokens) if (data.deviceId === u.deviceId) { data.role = 'user'; data.perms = {}; } persistRoom(); broadcastAll({ type: 'users-update', users: [...S.users.values()] }); renderUsers(); renderSettingsModal(); }
 
 $('setRoomName').onchange = () => saveSettings({ roomName: $('setRoomName').value.trim().slice(0, 40) || 'Projeto Hermes' });
 $('setFreeChat').onchange = () => saveSettings({ allowFreeChat: $('setFreeChat').checked });
 function saveSettings(partial) { requestAction({ name: 'update-settings', partial }); }
 function doUpdateSettings(partial) {
   S.settings = { ...S.settings, ...(partial || {}) };
-  applySettings();
-  broadcastAll({ type: 'settings-update', settings: S.settings });
-  persistRoom();
+  applySettings(); broadcastAll({ type: 'settings-update', settings: S.settings }); persistRoom();
   if ($('settingsModal').style.display !== 'none') renderSettingsModal();
   renderQuickMentions();
 }
 
-$('exportBtn').onclick = () => {
-  if (!hasPerm('manageHistory')) return;
-  const data = { code: S.code, settings: S.settings, messages: S.messages, exportedAt: new Date().toISOString() };
-  downloadJSON(data, `hermes-${S.code}-${new Date().toISOString().slice(0,10)}.json`);
-};
-$('exportFullBtn').onclick = async () => {
-  if (!hasPerm('manageHistory')) return;
-  const roomRecord = await idbGet('rooms', S.code);
-  const allMessages = await idbGetAllByIndex('messages', 'roomCode', S.code);
-  const allPending = await idbGetAllByIndex('pending', 'roomCode', S.code);
-  downloadJSON({ room: roomRecord, messages: allMessages, pending: allPending, exportedAt: new Date().toISOString() },
-    `hermes-full-${S.code}-${new Date().toISOString().slice(0,10)}.json`);
-};
-function downloadJSON(data, filename) {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob); const a = document.createElement('a');
-  a.href = url; a.download = filename; a.click();
-  URL.revokeObjectURL(url);
-}
-$('clearHistoryBtn').onclick = () => {
-  if (!hasPerm('manageHistory')) return;
-  if (!confirm('Apagar TODO o histórico desta sala?\n\nNão pode ser desfeito.')) return;
-  requestAction({ name: 'clear-history' });
-};
-async function doClearHistory() {
-  await idbClearByRoom('messages', S.code);
-  await idbClearByRoom('pending', S.code);
-  S.messages = []; S.pending.clear();
-  broadcastAll({ type: 'clear-history' });
-  renderMessages(); renderPending();
-}
-$('deleteRoomBtn').onclick = async () => {
-  if (!isOperator()) return;
-  if (!confirm('EXCLUIR a sala ' + S.code + ' permanentemente?')) return;
-  await idbClearByRoom('messages', S.code);
-  await idbClearByRoom('pending', S.code);
-  await idbDelete('rooms', S.code);
-  await deleteKV('lastRoom');
-  broadcastAll({ type: 'kick', reason: 'A sala foi excluída.' });
-  S.peer?.destroy(); setTimeout(() => location.reload(), 200);
-};
+$('exportBtn').onclick = () => { if (!hasPerm('manageHistory')) return; downloadJSON({ code: S.code, settings: S.settings, messages: S.messages, exportedAt: new Date().toISOString() }, `hermes-${S.code}-${new Date().toISOString().slice(0,10)}.json`); };
+$('exportFullBtn').onclick = async () => { if (!hasPerm('manageHistory')) return; const roomRecord = await idbGet('rooms', S.code); const allMessages = await idbGetAllByIndex('messages', 'roomCode', S.code); const allPending = await idbGetAllByIndex('pending', 'roomCode', S.code); downloadJSON({ room: roomRecord, messages: allMessages, pending: allPending, exportedAt: new Date().toISOString() }, `hermes-full-${S.code}-${new Date().toISOString().slice(0,10)}.json`); };
+function downloadJSON(data, filename) { const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url); }
+$('clearHistoryBtn').onclick = () => { if (!hasPerm('manageHistory')) return; if (!confirm('Apagar TODO o histórico?')) return; requestAction({ name: 'clear-history' }); };
+async function doClearHistory() { await idbClearByRoom('messages', S.code); await idbClearByRoom('pending', S.code); S.messages = []; S.pending.clear(); broadcastAll({ type: 'clear-history' }); renderMessages(); renderPending(); }
+$('deleteRoomBtn').onclick = async () => { if (!isOperator()) return; if (!confirm('EXCLUIR a sala permanentemente?')) return; await idbClearByRoom('messages', S.code); await idbClearByRoom('pending', S.code); await idbDelete('rooms', S.code); await deleteKV('lastRoom'); broadcastAll({ type: 'kick', reason: 'A sala foi excluída.' }); S.peer?.destroy(); setTimeout(() => location.reload(), 200); };
 
-/* ============================================================
-   DISPATCHER
-   ============================================================ */
 function requestAction(action) {
   if (S.isHost) return executeHostAction(S.peer.id, action);
-  const conn = S.conns.get('host');
-  if (conn?.open) conn.send({ type: 'admin-action', action });
+  const conn = S.conns.get('host'); if (conn?.open) conn.send({ type: 'admin-action', action });
 }
 function executeHostAction(requesterId, action) {
   if (!S.isHost || !action?.name) return;
@@ -2419,16 +1916,10 @@ function executeHostAction(requesterId, action) {
   const isOp = req.role === 'operator';
   const ok = (p) => isOp || (req.role === 'admin' && !!req.perms?.[p]);
   switch (action.name) {
-    case 'kick':
-      if (!ok('kickUsers') || action.targetId === requesterId) return;
-      { const t = S.users.get(action.targetId); if (!t || t.role === 'operator' || (t.role === 'admin' && !isOp)) return; doKickUser(action.targetId); } break;
-    case 'ban':
-      if (!ok('banUsers') || action.targetId === requesterId) return;
-      { const t = S.users.get(action.targetId); if (!t || t.role === 'operator' || (t.role === 'admin' && !isOp)) return; doBanUser(action.targetId, action.reason); } break;
+    case 'kick': if (!ok('kickUsers') || action.targetId === requesterId) return; { const t = S.users.get(action.targetId); if (!t || t.role === 'operator' || (t.role === 'admin' && !isOp)) return; doKickUser(action.targetId); } break;
+    case 'ban': if (!ok('banUsers') || action.targetId === requesterId) return; { const t = S.users.get(action.targetId); if (!t || t.role === 'operator' || (t.role === 'admin' && !isOp)) return; doBanUser(action.targetId, action.reason); } break;
     case 'unban': if (!ok('banUsers')) return; doUnban(action.deviceId); break;
-    case 'mute':
-      if (!ok('muteUsers')) return;
-      { const t = S.users.get(action.targetId); if (!t || t.role === 'operator' || (t.role === 'admin' && !isOp)) return; doMuteUser(action.targetId); } break;
+    case 'mute': if (!ok('muteUsers')) return; { const t = S.users.get(action.targetId); if (!t || t.role === 'operator' || (t.role === 'admin' && !isOp)) return; doMuteUser(action.targetId); } break;
     case 'unmute': if (!ok('muteUsers')) return; doUnmuteUser(action.targetId); break;
     case 'delete-msg': if (!ok('deleteMessages')) return; doDeleteMessage(action.msgId); break;
     case 'update-settings': if (!ok('manageSettings') && !ok('manageBots')) return; doUpdateSettings(action.partial); break;
@@ -2441,26 +1932,14 @@ function executeHostAction(requesterId, action) {
   }
 }
 
-$('togglePendingBtn').onclick = () => {
-  const p = $('pendingPanel');
-  p.style.display = p.style.display === 'none' ? 'flex' : 'none';
-  renderPending();
-};
+$('togglePendingBtn').onclick = () => { const p = $('pendingPanel'); p.style.display = p.style.display === 'none' ? 'flex' : 'none'; renderPending(); };
 $('closePendingBtn').onclick = () => $('pendingPanel').style.display = 'none';
 $('leaveBtn').onclick = () => {
-  if (S.isHost) {
-    if (!confirm('Sair da sala?\n\nO histórico fica salvo. Você poderá retomar depois.')) return;
-    broadcastAll({ type: 'kick', reason: 'O operador saiu. A sala retornará quando ele voltar.', temporary: true });
-  }
+  if (S.isHost) { if (!confirm('Sair? O histórico fica salvo.')) return; broadcastAll({ type: 'kick', reason: 'O operador saiu.', temporary: true }); }
   S.peer?.destroy(); setTimeout(() => location.reload(), 200);
 };
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') $('settingsModal').style.display = 'none';
-});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('settingsModal').style.display = 'none'; });
 
-/* ============================================================
-   RETOMADA
-   ============================================================ */
 async function initResume() {
   try { await getDB(); } catch { return; }
   const saved = await getKV('lastRoom'); if (!saved?.code) return;
@@ -2468,16 +1947,13 @@ async function initResume() {
   const roomRecord = await idbGet('rooms', saved.code);
   const lastAct = roomRecord?.lastActivity ? new Date(roomRecord.lastActivity).toLocaleString('pt-BR') : 'desconhecida';
   const roleLabel = saved.role === 'operator' ? 'como <b>operador</b>' : 'como <b>membro</b>';
-  $('resumeInfo').innerHTML =
-    `Sala <span class="rb-code">${escapeHtml(saved.code)}</span> ${roleLabel}<br>` +
-    `Nome: <b>${escapeHtml(saved.name || '—')}</b> · ${msgs.length} mensagem(ns) salva(s)<br>` +
-    `Última atividade: ${escapeHtml(lastAct)}`;
+  $('resumeInfo').innerHTML = `Sala <span class="rb-code">${escapeHtml(saved.code)}</span> ${roleLabel}<br>Nome: <b>${escapeHtml(saved.name || '—')}</b> · ${msgs.length} msg salva(s)<br>Última atividade: ${escapeHtml(lastAct)}`;
   $('resumeBanner').style.display = 'block';
 
   $('resumeBtn').onclick = async () => {
     $('resumeBtn').disabled = true; $('resumeBtn').textContent = 'Conectando...';
     if (saved.role === 'operator') {
-      if (!roomRecord) { alert('Registro da sala não encontrado.'); return; }
+      if (!roomRecord) { alert('Registro não encontrado.'); return; }
       const peer = new Peer('relaychat-' + saved.code);
       peer.on('open', async () => {
         S.peer = peer; S.isHost = true; S.code = saved.code;
@@ -2490,38 +1966,23 @@ async function initResume() {
         if (Array.isArray(roomRecord.resumeTokens)) for (const t of roomRecord.resumeTokens) if (t?.token && t.deviceId) S._resumeTokens.set(t.token, { deviceId: t.deviceId, name: t.name, role: t.role || 'user', perms: t.perms || {}, muted: !!t.muted });
         if (Array.isArray(roomRecord.members)) for (const m of roomRecord.members) if (m?.deviceId && m.role !== 'operator') { const pid = m.id || ('offline-' + m.deviceId); S.users.set(pid, { ...m, online: false }); }
         S.users.set(peer.id, { id: peer.id, name: S.myName, role: 'operator', perms: {}, deviceId: getDeviceId(), muted: false, online: true });
-
-        /* Garante campos de IA em bots antigos */
-        S.settings.bots = (S.settings.bots || []).map(b => ({
-          ...makeBot(b.name || 'Bot'),
-          ...b
-        }));
-
+        S.settings.bots = (S.settings.bots || []).map(b => ({ ...makeBot(b.name || 'Bot'), ...b }));
         const stored = await idbGetAllByIndex('messages', 'roomCode', saved.code);
         stored.sort((a, b) => a.ts - b.ts);
         S.messages = stored.map(m => { const c = { ...m }; delete c.roomCode; return c; });
         const pend = await idbGetAllByIndex('pending', 'roomCode', saved.code);
         S.pending = new Map(pend.map(p => { const c = { ...p }; delete c.roomCode; return [c.id, c]; }));
-
         location.hash = '';
         peer.on('connection', onHostNewConnection);
-        enterRoom();
-        addSystemMessageHost('Sala retomada.');
+        enterRoom(); addSystemMessageHost('Sala retomada.');
       });
-      peer.on('error', (err) => {
-        $('resumeBtn').disabled = false; $('resumeBtn').textContent = 'Retomar';
-        if (err.type === 'unavailable-id') alert('Código ' + saved.code + ' em uso.');
-        else alert('Erro: ' + err.message);
-      });
+      peer.on('error', (err) => { $('resumeBtn').disabled = false; $('resumeBtn').textContent = 'Retomar'; if (err.type === 'unavailable-id') alert('Código em uso.'); else alert('Erro: ' + err.message); });
     } else {
-      if (!saved.resumeToken) { alert('Sessão sem token de retomada.'); await deleteKV('lastRoom'); location.reload(); return; }
+      if (!saved.resumeToken) { await deleteKV('lastRoom'); location.reload(); return; }
       joinRoom(saved.code, saved.name || 'Anônimo', { resumeToken: saved.resumeToken });
     }
   };
-  $('dismissResumeBtn').onclick = async () => {
-    $('resumeBanner').style.display = 'none'; await deleteKV('lastRoom');
-  };
-
+  $('dismissResumeBtn').onclick = async () => { $('resumeBanner').style.display = 'none'; await deleteKV('lastRoom'); };
   if (saved.role !== 'operator' && saved.resumeToken) {
     $('autoHint').style.display = 'block';
     setTimeout(() => joinRoom(saved.code, saved.name || 'Anônimo', { resumeToken: saved.resumeToken, auto: true }), 500);
