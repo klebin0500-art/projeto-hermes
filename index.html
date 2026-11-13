@@ -1,0 +1,1741 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Relay Chat</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: #0f0f10; color: #e6e6e8; font-size: 14px; }
+  button { cursor: pointer; font: inherit; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  input, textarea, select { font: inherit; background: #1c1c1f; color: #e6e6e8; border: 1px solid #333; border-radius: 6px; padding: 8px 10px; width: 100%; outline: none; }
+  input:focus, textarea:focus, select:focus { border-color: #5865f2; }
+  input[type=color] { padding: 2px; height: 34px; cursor: pointer; }
+  button.primary { background: #5865f2; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; }
+  button.primary:hover { background: #4752c4; }
+  button.primary.speaking-as-bot { background: #f59e0b; }
+  button.primary.speaking-as-bot:hover { background: #d97706; }
+  button.secondary { background: #2a2a2e; color: #e6e6e8; border: 1px solid #3a3a3f; padding: 6px 10px; border-radius: 6px; }
+  button.danger { background: #b91c1c; color: white; border: none; padding: 6px 10px; border-radius: 6px; }
+  button.icon-btn { background: transparent; border: none; color: #999; padding: 4px 6px; border-radius: 4px; }
+  button.icon-btn:hover { background: #2a2a2e; color: #fff; }
+  button.tiny { padding: 3px 8px; font-size: 11px; }
+
+  #setup { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+  .setup-card { background: #17181b; border: 1px solid #2a2a2e; border-radius: 12px; padding: 28px; width: 100%; max-width: 440px; }
+  .setup-card h1 { margin: 0 0 4px; font-size: 22px; }
+  .setup-card .subtitle { color: #999; margin: 0 0 20px; font-size: 13px; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 18px; border-bottom: 1px solid #2a2a2e; }
+  .tab { background: transparent; border: none; color: #999; padding: 10px 14px; border-bottom: 2px solid transparent; font-weight: 600; }
+  .tab.active { color: #fff; border-bottom-color: #5865f2; }
+  .tab-content label { display: block; margin: 12px 0 6px; color: #bbb; font-size: 13px; }
+  .tab-content button.primary { width: 100%; margin-top: 16px; padding: 11px; }
+  .tab-desc { color: #888; font-size: 12px; line-height: 1.5; margin: 0 0 12px; padding: 8px 10px; background: #141415; border-left: 3px solid #5865f2; border-radius: 4px; }
+  .resume-banner { background: linear-gradient(135deg, #1e3a5f, #162d4a); border: 1px solid #2a4a6f; border-radius: 8px; padding: 14px; margin-bottom: 18px; }
+  .resume-banner .rb-title { font-weight: 700; font-size: 13px; color: #8eb4ff; margin: 0 0 6px; display: flex; align-items: center; gap: 6px; }
+  .resume-banner .rb-info { color: #b8c8dd; font-size: 12px; margin: 0 0 10px; line-height: 1.5; }
+  .resume-banner .rb-code { font-family: ui-monospace, monospace; color: #fff; background: #0f1f33; padding: 1px 6px; border-radius: 4px; }
+  .resume-banner .rb-actions { display: flex; gap: 8px; }
+  .resume-banner .rb-actions button { padding: 6px 12px; font-size: 12px; }
+
+  #app { display: grid; grid-template-columns: 260px 1fr auto; height: 100vh; }
+  .sidebar { background: #17181b; border-right: 1px solid #2a2a2e; display: flex; flex-direction: column; min-height: 0; }
+  .sidebar-header { padding: 16px; border-bottom: 1px solid #2a2a2e; }
+  .sidebar-header h2 { margin: 0 0 8px; font-size: 16px; word-break: break-word; }
+  .room-code { display: flex; align-items: center; gap: 6px; background: #0f0f10; border: 1px solid #2a2a2e; border-radius: 6px; padding: 6px 8px; font-family: ui-monospace, monospace; font-size: 13px; }
+  .room-code span { flex: 1; color: #5865f2; font-weight: 600; letter-spacing: 1px; }
+  .users-section { padding: 16px; flex: 1; overflow-y: auto; min-height: 0; }
+  .users-section h3 { margin: 0 0 10px; font-size: 11px; text-transform: uppercase; color: #888; letter-spacing: 0.5px; display: flex; justify-content: space-between; }
+  .user-list { list-style: none; margin: 0; padding: 0; }
+  .user-item { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 6px; color: #ccc; }
+  .user-item:hover { background: #232326; }
+  .user-item .user-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .user-item .user-role { font-size: 10px; color: white; padding: 1px 6px; border-radius: 4px; text-transform: uppercase; font-weight: 600; }
+  .user-role.role-op { background: #5865f2; }
+  .user-role.role-admin { background: #f59e0b; }
+  .user-typing { font-size: 10px; color: #4ade80; margin-left: 4px; }
+  .kick-btn { background: transparent; border: none; color: #b91c1c; padding: 0 4px; font-size: 14px; visibility: hidden; }
+  .user-item:hover .kick-btn { visibility: visible; }
+  .sidebar-footer { padding: 12px 16px; border-top: 1px solid #2a2a2e; display: flex; flex-direction: column; gap: 6px; }
+  .sidebar-footer button { text-align: left; }
+  .save-indicator { font-size: 11px; color: #4ade80; padding: 6px 16px; border-top: 1px solid #2a2a2e; display: flex; align-items: center; gap: 6px; }
+  .save-indicator.saving { color: #f59e0b; }
+  .save-indicator.error { color: #ef4444; }
+
+  .main { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+  .main-header { padding: 10px 16px; border-bottom: 1px solid #2a2a2e; display: flex; flex-direction: column; gap: 8px; }
+  .main-header-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  #mainTitle { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+  .header-actions { display: flex; gap: 6px; align-items: center; }
+  .badge { background: #b91c1c; color: white; font-size: 11px; padding: 1px 7px; border-radius: 10px; margin-left: 4px; }
+  .search-input { max-width: 280px; font-size: 12px; padding: 5px 8px; }
+  .messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .msg { padding: 8px 12px; border-radius: 8px; max-width: 75%; line-height: 1.4; position: relative; word-wrap: break-word; }
+  .msg.user { background: #232328; align-self: flex-start; }
+  .msg.bot { align-self: flex-start; background: #1e2d4a; }
+  .msg.system { align-self: center; background: transparent; color: #777; font-style: italic; font-size: 12px; padding: 2px 8px; }
+  .msg .name { font-weight: 600; color: #8eb4ff; font-size: 12px; }
+  .msg .name .bot-emoji { margin-right: 2px; }
+  .msg .time { font-size: 10px; color: #666; margin-left: 6px; }
+  .msg .text { margin-top: 2px; }
+  .msg .pending-tag { color: #f59e0b; font-size: 12px; margin-left: 6px; }
+  .msg .del-btn { position: absolute; top: 4px; right: 4px; background: #1a1a1d; border: none; color: #999; width: 20px; height: 20px; border-radius: 4px; visibility: hidden; font-size: 12px; }
+  .msg:hover .del-btn { visibility: visible; }
+  .msg .del-btn:hover { color: #ef4444; }
+  .msg.highlight { outline: 2px solid #f59e0b; }
+  .typing-line { font-size: 11px; color: #4ade80; padding: 2px 16px; min-height: 16px; font-style: italic; }
+
+  .input-area { padding: 12px; border-top: 1px solid #2a2a2e; transition: background 0.2s; }
+  .input-area.speaking-as-bot { background: linear-gradient(to bottom, rgba(245, 158, 11, 0.08), transparent); }
+  .input-row { display: flex; gap: 8px; margin-bottom: 6px; align-items: center; }
+  .input-row:last-child { margin-bottom: 0; }
+  .target-select { max-width: 240px; }
+  #messageInput { resize: none; min-height: 38px; max-height: 120px; }
+  .input-row button.primary { padding: 0 18px; }
+
+  .speak-as-bot-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #ccc;
+    font-size: 13px;
+    padding: 6px 10px;
+    background: #1c1c1f;
+    border: 1px solid #333;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+    margin: 0;
+  }
+  .speak-as-bot-label input[type=checkbox] { width: auto; margin: 0; cursor: pointer; }
+  .speak-as-bot-label.active { background: #3a2a10; border-color: #f59e0b; color: #f59e0b; }
+
+  #pendingPanel { width: 360px; background: #17181b; border-left: 1px solid #2a2a2e; display: flex; flex-direction: column; min-height: 0; }
+  .pending-header { padding: 12px 16px; border-bottom: 1px solid #2a2a2e; display: flex; justify-content: space-between; align-items: center; }
+  .pending-header h3 { margin: 0; font-size: 14px; }
+  .hint { font-size: 11px; color: #888; padding: 10px 16px; margin: 0; border-bottom: 1px solid #2a2a2e; line-height: 1.4; }
+  .pending-list { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .pending-card { background: #1c1c1f; border: 1px solid #2a2a2e; border-left-width: 3px; border-radius: 8px; padding: 10px; font-size: 13px; }
+  .pending-meta { color: #bbb; margin-bottom: 6px; }
+  .pending-meta strong { color: #fff; }
+  .pending-context { font-size: 11px; color: #888; margin-top: 4px; font-style: italic; }
+  .pending-text { background: #0f0f10; border-radius: 4px; padding: 6px 8px; margin: 6px 0; font-style: italic; color: #ddd; white-space: pre-wrap; }
+  .pending-actions { display: flex; gap: 6px; margin: 6px 0; }
+  .pending-response { min-height: 60px; resize: vertical; }
+  .empty { text-align: center; color: #666; font-size: 12px; padding: 20px 0; }
+
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+  .modal-card { background: #17181b; border: 1px solid #2a2a2e; border-radius: 12px; padding: 24px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+  .modal-card h2 { margin: 0 0 16px; font-size: 18px; }
+  .modal-card h3 { margin: 20px 0 8px; font-size: 13px; color: #f59e0b; text-transform: uppercase; letter-spacing: 0.5px; }
+  .modal-card label { display: block; margin: 14px 0 6px; color: #bbb; font-size: 13px; }
+  .modal-card label input[type=checkbox] { width: auto; margin-right: 6px; }
+  .modal-actions { margin-top: 18px; display: flex; justify-content: flex-end; gap: 8px; }
+  .settings-tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid #2a2a2e; flex-wrap: wrap; }
+  .stab { background: transparent; border: none; color: #999; padding: 8px 12px; border-bottom: 2px solid transparent; font-weight: 600; font-size: 13px; }
+  .stab.active { color: #fff; border-bottom-color: #5865f2; }
+  .stab:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .bot-config-row { background: #1c1c1f; border: 1px solid #2a2a2e; border-left-width: 3px; border-radius: 8px; padding: 10px; margin-bottom: 8px; }
+  .bot-config-header { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+  .bot-config-header input[type=text] { flex: 1; font-weight: 600; }
+  .bot-config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .bot-config-grid > div { display: flex; flex-direction: column; }
+  .bot-config-grid label { margin: 0 0 2px; font-size: 11px; color: #888; }
+  .bot-config-grid .full { grid-column: 1 / -1; }
+  .bot-config-footer { display: flex; gap: 6px; margin-top: 8px; align-items: center; flex-wrap: wrap; font-size: 12px; }
+  .bot-config-footer label { margin: 0; display: flex; align-items: center; gap: 4px; }
+  .add-bot-row { display: flex; gap: 6px; margin-top: 8px; }
+  .add-bot-row input { flex: 1; }
+  .add-bot-row button { background: #2a2a2e; border: 1px solid #3a3a3f; color: #e6e6e8; padding: 0 12px; border-radius: 6px; }
+
+  .admin-user-row { background: #1c1c1f; border: 1px solid #2a2a2e; border-radius: 8px; padding: 10px; margin-bottom: 8px; }
+  .admin-user-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .admin-user-header .user-name { font-weight: 600; flex: 1; }
+  .admin-perms { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; padding: 8px; background: #141415; border-radius: 6px; }
+  .admin-perms label { margin: 0; color: #ccc; font-size: 12px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .admin-user-row button { width: 100%; margin-top: 4px; }
+
+  .danger-zone { border-top: 1px solid #3a2020; margin-top: 24px; padding-top: 16px; }
+  .danger-zone button { width: 100%; margin-bottom: 8px; }
+
+  .quick-mention { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px; }
+  .mention-chip { background: #2a2a2e; border: 1px solid #3a3a3f; color: #8eb4ff; padding: 2px 8px; border-radius: 10px; font-size: 11px; cursor: pointer; }
+  .mention-chip:hover { background: #3a3a3f; }
+
+  @media (max-width: 900px) {
+    #app { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    #pendingPanel { position: fixed; right: 0; top: 0; bottom: 0; z-index: 50; box-shadow: -4px 0 20px rgba(0,0,0,0.5); width: 90vw; max-width: 400px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="setup">
+  <div class="setup-card">
+    <h1>Relay Chat</h1>
+    <p class="subtitle">Sala de chat com bots e relay manual</p>
+    <div id="resumeBanner" class="resume-banner" style="display:none">
+      <p class="rb-title">💾 Sala salva encontrada</p>
+      <p class="rb-info" id="resumeInfo"></p>
+      <div class="rb-actions">
+        <button id="resumeBtn" class="primary">Retomar</button>
+        <button id="dismissResumeBtn" class="secondary">Ignorar</button>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-tab="create">👑 Criador</button>
+      <button class="tab" data-tab="join">🎮 Convidado</button>
+    </div>
+    <div id="tab-create" class="tab-content">
+      <p class="tab-desc">Crie uma sala nova. Você vira o operador e recebe um código para compartilhar com os convidados.</p>
+      <label>Seu nome (operador)</label>
+      <input id="createName" placeholder="Ex: Hermes" maxlength="40">
+      <button id="createBtn" class="primary">Criar sala</button>
+    </div>
+    <div id="tab-join" class="tab-content" style="display:none">
+      <p class="tab-desc">Já tem o código de uma sala? Cole abaixo e entre como convidado.</p>
+      <label>Código da sala</label>
+      <input id="joinCode" placeholder="Ex: ABC123" maxlength="6" style="text-transform:uppercase" autocomplete="off">
+      <label>Seu nome</label>
+      <input id="joinName" placeholder="Ex: João" maxlength="40">
+      <button id="joinBtn" class="primary">Entrar na sala</button>
+    </div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2 id="roomNameDisplay">Relay Chat</h2>
+      <div class="room-code">
+        <span id="roomCodeDisplay">------</span>
+        <button id="copyCodeBtn" class="icon-btn" title="Copiar código">📋</button>
+      </div>
+    </div>
+    <div class="users-section">
+      <h3>Participantes <span id="userCount">0</span></h3>
+      <ul id="userList" class="user-list"></ul>
+    </div>
+    <div id="saveIndicator" class="save-indicator" style="display:none">💾 Salvo</div>
+    <div class="sidebar-footer">
+      <button id="botsQuickBtn" class="secondary" style="display:none">🤖 Gerenciar bots</button>
+      <button id="settingsBtn" class="secondary" style="display:none">⚙️ Configurações</button>
+      <button id="leaveBtn" class="secondary">🚪 Sair</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="main-header">
+      <div class="main-header-row">
+        <div id="mainTitle">Chat geral</div>
+        <div class="header-actions">
+          <input id="searchInput" class="search-input" placeholder="🔍 Buscar..." style="display:none">
+          <button id="searchToggleBtn" class="icon-btn" title="Buscar">🔍</button>
+          <button id="soundToggleBtn" class="icon-btn" title="Som de notificação">🔔</button>
+          <button id="togglePendingBtn" class="secondary" style="display:none">
+            Fila <span id="pendingCount" class="badge">0</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="messages" class="messages"></div>
+    <div id="typingLine" class="typing-line"></div>
+
+    <div class="input-area" id="inputArea">
+      <div id="quickMentions" class="quick-mention" style="display:none"></div>
+      <div class="input-row">
+        <select id="targetSelect" class="target-select">
+          <option value="">Chat geral (livre)</option>
+        </select>
+        <label id="speakAsBotLabel" class="speak-as-bot-label" style="display:none">
+          <input type="checkbox" id="speakAsBotCheck"> 🎭 Como bot
+        </label>
+      </div>
+      <div class="input-row">
+        <textarea id="messageInput" placeholder="Digite sua mensagem... (Enter envia, Shift+Enter quebra linha)" rows="1"></textarea>
+        <button id="sendBtn" class="primary">Enviar</button>
+      </div>
+    </div>
+  </main>
+
+  <aside id="pendingPanel" style="display:none">
+    <div class="pending-header">
+      <h3>Fila de relay manual</h3>
+      <button id="closePendingBtn" class="icon-btn">✕</button>
+    </div>
+    <p class="hint">Copie a mensagem → leve ao Spicychat → cole a resposta aqui → entregue ao usuário.</p>
+    <div id="pendingList" class="pending-list"></div>
+  </aside>
+</div>
+
+<div id="settingsModal" class="modal" style="display:none">
+  <div class="modal-card">
+    <h2>Configurações</h2>
+
+    <div class="settings-tabs">
+      <button class="stab active" data-stab="general">Geral</button>
+      <button class="stab" data-stab="bots">Bots</button>
+      <button class="stab" data-stab="users">Usuários</button>
+      <button class="stab" data-stab="history">Histórico</button>
+    </div>
+
+    <div id="stab-general" class="stab-content">
+      <label>Nome da sala</label>
+      <input id="setRoomName" maxlength="40">
+      <label><input type="checkbox" id="setFreeChat"> Permitir que usuários conversem livremente</label>
+    </div>
+
+    <div id="stab-bots" class="stab-content" style="display:none">
+      <p style="font-size:12px; color:#888; margin:0 0 8px">Crie e personalize os bots que os usuários vão conversar. <b style="color:#f59e0b">Apenas o criador da sala</b> pode usar "🎭 Falar como este bot" para postar como o personagem no chat.</p>
+      <div id="botsList"></div>
+      <div class="add-bot-row">
+        <input id="newBotName" placeholder="Nome do novo bot" maxlength="40">
+        <button id="addBotBtn">+ Adicionar</button>
+      </div>
+    </div>
+
+    <div id="stab-users" class="stab-content" style="display:none">
+      <h3>Usuários & Cargos</h3>
+      <p style="font-size:12px; color:#888; margin:0 0 10px">Promova alguém a admin e marque só o que ele pode fazer. Cargos persistem pelo nome. <b style="color:#f59e0b">Nenhum admin pode falar como bot.</b></p>
+      <div id="usersAdminList"></div>
+    </div>
+
+    <div id="stab-history" class="stab-content" style="display:none">
+      <h3>Histórico</h3>
+      <button id="exportBtn" class="secondary" style="width:100%; margin-bottom:8px">📥 Exportar histórico (JSON)</button>
+      <button id="exportFullBtn" class="secondary" style="width:100%; margin-bottom:8px">📦 Exportar backup completo (sala + mensagens)</button>
+    </div>
+
+    <div id="stab-danger" class="danger-zone" style="display:none">
+      <h3 style="color:#ef4444">Zona de perigo</h3>
+      <button id="clearHistoryBtn" class="danger">🧹 Limpar histórico da sala</button>
+      <button id="deleteRoomBtn" class="danger">🗑️ Excluir sala permanentemente</button>
+    </div>
+
+    <div class="modal-actions">
+      <button id="closeSettingsBtn" class="secondary">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   RELAY CHAT v5 — apenas o criador fala como bot
+   ============================================================ */
+
+const $ = (id) => document.getElementById(id);
+
+function uuid() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function genCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s = '';
+  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+}
+
+const MAX_FRIENDS = 10;
+const MAX_BOTS = 20;
+const MAX_MSG_HISTORY = 10000;
+const RATE_LIMIT_MS = 800;
+const TYPING_TIMEOUT_MS = 2500;
+
+const PERMS = {
+  kickUsers:      'Expulsar usuários',
+  deleteMessages: 'Apagar mensagens',
+  manageSettings: 'Alterar nome e chat livre',
+  manageBots:     'Editar bots',
+  manageRelay:    'Gerenciar fila de relay',
+  manageHistory:  'Exportar / limpar histórico'
+};
+
+function makeBot(name = 'Novo Bot', opts = {}) {
+  return {
+    id: uuid(),
+    name,
+    emoji: '🤖',
+    color: '#5865f2',
+    description: '',
+    greeting: '',
+    online: true,
+    adminOnly: false,
+    maxPending: 3,
+    ...opts
+  };
+}
+
+/* ============================================================
+   PERSISTÊNCIA
+   ============================================================ */
+const DB_NAME = 'relaychat';
+const DB_VERSION = 1;
+let _db = null;
+
+function getDB() {
+  if (_db) return Promise.resolve(_db);
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('rooms')) db.createObjectStore('rooms', { keyPath: 'code' });
+      if (!db.objectStoreNames.contains('messages')) {
+        const s = db.createObjectStore('messages', { keyPath: 'id' });
+        s.createIndex('roomCode', 'roomCode');
+        s.createIndex('ts', 'ts');
+      }
+      if (!db.objectStoreNames.contains('pending')) {
+        const s = db.createObjectStore('pending', { keyPath: 'id' });
+        s.createIndex('roomCode', 'roomCode');
+      }
+      if (!db.objectStoreNames.contains('kv')) db.createObjectStore('kv', { keyPath: 'k' });
+    };
+    req.onsuccess = () => { _db = req.result; resolve(_db); };
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbPut(store, value) {
+  const db = await getDB();
+  return new Promise((res, rej) => {
+    const t = db.transaction(store, 'readwrite'); t.objectStore(store).put(value);
+    t.oncomplete = () => res(); t.onerror = () => rej(t.error);
+  });
+}
+async function idbGet(store, key) {
+  const db = await getDB();
+  return new Promise((res, rej) => {
+    const r = db.transaction(store).objectStore(store).get(key);
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+}
+async function idbDelete(store, key) {
+  const db = await getDB();
+  return new Promise((res, rej) => {
+    const t = db.transaction(store, 'readwrite'); t.objectStore(store).delete(key);
+    t.oncomplete = () => res(); t.onerror = () => rej(t.error);
+  });
+}
+async function idbGetAllByIndex(store, indexName, value) {
+  const db = await getDB();
+  return new Promise((res, rej) => {
+    const r = db.transaction(store).objectStore(store).index(indexName).getAll(value);
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+}
+async function idbReplaceByRoom(store, roomCode, items) {
+  const db = await getDB();
+  return new Promise((res, rej) => {
+    const t = db.transaction(store, 'readwrite');
+    const s = t.objectStore(store); const idx = s.index('roomCode');
+    const cur = idx.openCursor(IDBKeyRange.only(roomCode));
+    cur.onsuccess = (e) => {
+      const c = e.target.result;
+      if (c) { c.delete(); c.continue(); }
+      else { for (const it of items) s.put({ ...it, roomCode }); }
+    };
+    t.oncomplete = () => res(); t.onerror = () => rej(t.error);
+  });
+}
+async function idbTrimMessages(roomCode, keepN = MAX_MSG_HISTORY) {
+  const all = await idbGetAllByIndex('messages', 'roomCode', roomCode);
+  if (all.length <= keepN) return;
+  all.sort((a, b) => a.ts - b.ts);
+  const toDelete = all.slice(0, all.length - keepN);
+  const db = await getDB();
+  const t = db.transaction('messages', 'readwrite');
+  const s = t.objectStore('messages');
+  for (const m of toDelete) s.delete(m.id);
+  await new Promise(r => { t.oncomplete = r; t.onerror = r; });
+}
+const idbClearByRoom = (store, code) => idbReplaceByRoom(store, code, []);
+const persistKV = (k, v) => idbPut('kv', { k, v }).catch(e => console.error('kv', e));
+const getKV = async (k) => (await idbGet('kv', k))?.v ?? null;
+const deleteKV = (k) => idbDelete('kv', k).catch(() => {});
+
+let saveIndicatorTimer = null;
+function showSaveState(state) {
+  const el = $('saveIndicator'); if (!el) return;
+  el.style.display = 'flex';
+  el.className = 'save-indicator ' + (state === 'saving' ? 'saving' : state === 'error' ? 'error' : '');
+  el.textContent = state === 'saving' ? '💾 Salvando...' : state === 'error' ? '⚠️ Falha ao salvar' : '💾 Salvo';
+  clearTimeout(saveIndicatorTimer);
+  if (state === 'saved') saveIndicatorTimer = setTimeout(() => el.style.display = 'none', 2000);
+}
+function persistMessage(msg) {
+  if (!S.code) return;
+  showSaveState('saving');
+  idbPut('messages', { ...msg, roomCode: S.code })
+    .then(() => { showSaveState('saved'); if (S.messages.length % 100 === 0) idbTrimMessages(S.code); })
+    .catch(e => { console.error(e); showSaveState('error'); });
+}
+function persistRoom() {
+  if (!S.isHost) return; showSaveState('saving');
+  idbPut('rooms', {
+    code: S.code, name: S.settings.roomName, settings: S.settings,
+    admins: [...S._adminNames.entries()].map(([name, perms]) => ({ name, perms })),
+    hostName: S.myName, createdAt: S._createdAt || Date.now(), lastActivity: Date.now()
+  }).then(() => showSaveState('saved')).catch(e => { console.error(e); showSaveState('error'); });
+}
+function persistPending() {
+  if (!S.isHost) return;
+  idbReplaceByRoom('pending', S.code, [...S.pending.values()]).catch(e => console.error(e));
+}
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const S = {
+  peer: null, conns: new Map(), isHost: false, code: null, myName: '',
+  users: new Map(), messages: [], pending: new Map(),
+  settings: {
+    roomName: 'Relay Chat',
+    bots: [makeBot('Bot A'), makeBot('Bot B')],
+    allowFreeChat: true
+  },
+  _createdAt: null,
+  _adminNames: new Map(),
+  _rateLimit: new Map(),
+  _typingTimers: new Map(),
+  _speakAsBot: false
+};
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function me() { return S.users.get(S.peer?.id); }
+function isOperator() { return me()?.role === 'operator'; }
+function hasPerm(p) {
+  const m = me(); if (!m) return false;
+  if (m.role === 'operator') return true;
+  if (m.role === 'admin') return !!m.perms?.[p];
+  return false;
+}
+function hasAnyAdminUI() {
+  return isOperator() || Object.keys(PERMS).some(k => hasPerm(k));
+}
+function findBot(idOrName) {
+  if (!idOrName) return null;
+  return S.settings.bots.find(b => b.id === idOrName || b.name === idOrName) || null;
+}
+function uniqueName(base, existing) {
+  base = base.trim() || 'Anônimo';
+  if (!existing.includes(base)) return base;
+  let i = 2;
+  while (existing.includes(base + ' (' + i + ')')) i++;
+  return base + ' (' + i + ')';
+}
+
+/* ============================================================
+   SOM
+   ============================================================ */
+let _audioCtx = null;
+let _soundEnabled = localStorage.getItem('relaychat_sound') !== 'off';
+function updateSoundBtn() {
+  const b = $('soundToggleBtn');
+  if (b) b.textContent = _soundEnabled ? '🔔' : '🔕';
+}
+$('soundToggleBtn').onclick = () => {
+  _soundEnabled = !_soundEnabled;
+  localStorage.setItem('relaychat_sound', _soundEnabled ? 'on' : 'off');
+  updateSoundBtn();
+};
+updateSoundBtn();
+function beep(freq = 880, dur = 0.08, vol = 0.05) {
+  if (!_soundEnabled) return;
+  try {
+    _audioCtx = _audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = _audioCtx.createOscillator(); const g = _audioCtx.createGain();
+    o.frequency.value = freq; o.type = 'sine';
+    g.gain.value = vol;
+    o.connect(g); g.connect(_audioCtx.destination);
+    o.start(); o.stop(_audioCtx.currentTime + dur);
+  } catch {}
+}
+
+/* ============================================================
+   SETUP
+   ============================================================ */
+function showScreen(name) {
+  $('setup').style.display = name === 'setup' ? 'flex' : 'none';
+  $('app').style.display = name === 'app' ? 'grid' : 'none';
+}
+function safeCopy(text) {
+  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).catch(() => prompt('Copie:', text));
+  else prompt('Copie:', text);
+}
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.onclick = () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+    tab.classList.add('active');
+    $('tab-' + tab.dataset.tab).style.display = 'block';
+  };
+});
+
+const savedName = localStorage.getItem('relaychat_name') || '';
+$('createName').value = savedName; $('joinName').value = savedName;
+const hash = location.hash.replace('#', '').toUpperCase().trim();
+if (hash.length === 6) { $('joinCode').value = hash; document.querySelector('[data-tab="join"]').click(); }
+
+$('createBtn').onclick = async () => {
+  const name = $('createName').value.trim();
+  if (!name) return alert('Digite seu nome.');
+  localStorage.setItem('relaychat_name', name);
+  await getDB(); createRoom(name, genCode());
+};
+$('joinBtn').onclick = async () => {
+  const code = $('joinCode').value.trim().toUpperCase();
+  const name = $('joinName').value.trim();
+  if (!code || !name) return alert('Preencha código e nome.');
+  if (code.length !== 6) return alert('O código deve ter 6 caracteres.');
+  localStorage.setItem('relaychat_name', name);
+  await getDB(); joinRoom(code, name);
+};
+
+/* ============================================================
+   HOST
+   ============================================================ */
+async function createRoom(name, code) {
+  const peerId = 'relaychat-' + code;
+  const peer = new Peer(peerId);
+
+  peer.on('open', async () => {
+    S.peer = peer; S.isHost = true; S.code = code; S.myName = name; S._createdAt = Date.now();
+    S.users.set(peerId, { id: peerId, name, role: 'operator', perms: {} });
+    location.hash = code;
+    peer.on('connection', onHostNewConnection);
+    persistRoom();
+    persistKV('lastRoom', { code, name, role: 'operator' });
+    enterRoom();
+    addSystemMessageHost(`${name} criou a sala.`);
+  });
+  peer.on('error', (err) => {
+    if (err.type === 'unavailable-id') {
+      peer.destroy();
+      if (S.code === code) alert('O código ' + code + ' já está em uso.');
+      else createRoom(name, genCode());
+    } else alert('Erro ao criar sala: ' + err.message);
+  });
+}
+
+function onHostNewConnection(conn) {
+  conn.on('open', () => {
+    if (S.users.size >= MAX_FRIENDS + 1) {
+      conn.send({ type: 'error', message: 'Sala cheia.' });
+      setTimeout(() => conn.close(), 400); return;
+    }
+    const existing = [...S.users.values()].map(u => u.name);
+    const raw = String(conn.metadata?.name || '').slice(0, 40).trim();
+    const name = uniqueName(raw || 'Anônimo', existing);
+
+    const savedAdmin = S._adminNames.get(name.toLowerCase());
+    const role = savedAdmin ? 'admin' : 'user';
+    const perms = savedAdmin || {};
+
+    S.conns.set(conn.peer, conn);
+    S.users.set(conn.peer, { id: conn.peer, name, role, perms });
+
+    conn.send({ type: 'welcome', state: serializeState() });
+    broadcastAll({ type: 'users-update', users: [...S.users.values()] });
+    addSystemMessageHost(`${name} entrou${role === 'admin' ? ' (admin restaurado)' : ''}.`);
+  });
+  conn.on('data', (data) => hostOnData(conn.peer, data));
+  conn.on('close', () => hostOnDisconnect(conn.peer));
+  conn.on('error', () => hostOnDisconnect(conn.peer));
+}
+
+function hostOnData(peerId, data) {
+  if (!data?.type) return;
+  switch (data.type) {
+    case 'chat': return hostHandleChat(peerId, data);
+    case 'relay-request': return hostHandleRelayRequest(peerId, data);
+    case 'speak-as-bot': return hostHandleSpeakAsBot(peerId, data);
+    case 'admin-action': return executeHostAction(peerId, data.action);
+    case 'typing': return hostHandleTyping(peerId);
+  }
+}
+
+function hostHandleChat(peerId, data) {
+  const user = S.users.get(peerId); if (!user) return;
+  if (!S.settings.allowFreeChat && user.role === 'user') return;
+  if (!checkRateLimit(peerId)) return;
+  const text = String(data.text || '').slice(0, 4000).trim(); if (!text) return;
+  const msg = { id: uuid(), type: 'user', fromId: peerId, fromName: user.name, text, ts: Date.now() };
+  addMessageLocal(msg); broadcastAll({ type: 'chat', msg });
+  clearTyping(peerId);
+}
+
+function hostHandleRelayRequest(peerId, data) {
+  const user = S.users.get(peerId); if (!user) return;
+  if (!checkRateLimit(peerId)) return;
+  const bot = findBot(data.botId || data.bot);
+  if (!bot) return sendError(peerId, 'Bot não encontrado.');
+  if (!bot.online) return sendError(peerId, `O bot "${bot.name}" está offline.`);
+  if (bot.adminOnly && user.role === 'user') return sendError(peerId, `O bot "${bot.name}" é só para admins.`);
+  const botPending = [...S.pending.values()].filter(r => r.botId === bot.id).length;
+  if (botPending >= bot.maxPending) return sendError(peerId, `O bot "${bot.name}" já tem ${bot.maxPending} pedidos na fila.`);
+
+  const text = String(data.text || '').slice(0, 4000).trim(); if (!text) return;
+
+  const contextCount = S.messages.filter(m =>
+    (m.fromId === peerId && m.relayBotId === bot.id) ||
+    (m.type === 'bot' && m.botId === bot.id && m.replyToId === peerId)
+  ).length;
+
+  const relay = {
+    id: uuid(), userId: peerId, userName: user.name,
+    botId: bot.id, botName: bot.name, botEmoji: bot.emoji, botColor: bot.color,
+    text, ts: Date.now(),
+    contextCount, userRole: user.role
+  };
+  S.pending.set(relay.id, relay);
+
+  const relayMsg = {
+    id: uuid(), type: 'user', fromId: peerId, fromName: user.name, text, ts: Date.now(),
+    relayPending: relay.id, relayBot: bot.name, relayBotId: bot.id,
+    relayBotEmoji: bot.emoji, relayBotColor: bot.color
+  };
+  addMessageLocal(relayMsg);
+  broadcastAll({ type: 'chat', msg: relayMsg });
+  broadcastAll({ type: 'pending-update', pending: [...S.pending.values()] });
+  persistPending(); renderPending();
+  clearTyping(peerId);
+  beep(660, 0.06, 0.04);
+}
+
+/* SEGURANÇA: SOMENTE o operador (criador da sala) pode falar como bot */
+function hostHandleSpeakAsBot(peerId, data) {
+  const user = S.users.get(peerId); if (!user) return;
+  if (user.role !== 'operator') {
+    return sendError(peerId, 'Apenas o criador da sala pode falar como bot.');
+  }
+  if (!checkRateLimit(peerId)) return;
+
+  const bot = findBot(data.botId); if (!bot) return sendError(peerId, 'Bot não encontrado.');
+  const text = String(data.text || '').slice(0, 4000).trim(); if (!text) return;
+
+  const botMsg = {
+    id: uuid(), type: 'bot', fromName: bot.name,
+    botId: bot.id, botEmoji: bot.emoji, botColor: bot.color,
+    text, ts: Date.now(),
+    spokenBy: user.name
+  };
+  addMessageLocal(botMsg);
+  broadcastAll({ type: 'chat', msg: botMsg });
+  clearTyping(peerId);
+  beep(1046, 0.05, 0.03);
+}
+
+function checkRateLimit(peerId) {
+  const now = Date.now();
+  const last = S._rateLimit.get(peerId) || 0;
+  if (now - last < RATE_LIMIT_MS) return false;
+  S._rateLimit.set(peerId, now);
+  return true;
+}
+function sendError(peerId, message) {
+  const conn = S.conns.get(peerId);
+  if (conn) try { conn.send({ type: 'error', message }); } catch {}
+}
+function hostOnDisconnect(peerId) {
+  const user = S.users.get(peerId); if (!user) return;
+  S.users.delete(peerId); S.conns.delete(peerId); S._rateLimit.delete(peerId);
+  clearTyping(peerId);
+
+  let changed = false;
+  for (const [id, r] of S.pending) {
+    if (r.userId === peerId) {
+      S.pending.delete(id);
+      const orig = S.messages.find(m => m.relayPending === id);
+      if (orig) { delete orig.relayPending; persistMessage(orig); }
+      changed = true;
+    }
+  }
+  if (changed) { persistPending(); broadcastAll({ type: 'pending-update', pending: [...S.pending.values()] }); }
+
+  broadcastAll({ type: 'users-update', users: [...S.users.values()] });
+  addSystemMessageHost(`${user.name} saiu.`);
+  renderPending(); renderUsers(); renderMessages();
+}
+function hostHandleTyping(peerId) {
+  const user = S.users.get(peerId); if (!user) return;
+  broadcastAll({ type: 'typing', peerId, name: user.name }, peerId);
+}
+
+/* ============================================================
+   CLIENT
+   ============================================================ */
+function joinRoom(code, name) {
+  const peer = new Peer();
+  peer.on('open', () => {
+    S.peer = peer; S.isHost = false; S.code = code; S.myName = name;
+    const conn = peer.connect('relaychat-' + code, { reliable: true, metadata: { name } });
+    S.conns.set('host', conn);
+    const timeout = setTimeout(() => {
+      if (!S.conns.get('host')?.open) {
+        alert('Não foi possível conectar. Verifique o código e se o host está online.');
+        peer.destroy();
+      }
+    }, 10000);
+    conn.on('open', () => { clearTimeout(timeout); enterRoom(); });
+    conn.on('data', (data) => userOnData(data));
+    conn.on('close', () => addSystemMessageLocal('Conexão perdida.'));
+    conn.on('error', (e) => console.error(e));
+  });
+  peer.on('error', (err) => {
+    if (err.type === 'peer-unavailable') alert('Sala não encontrada.');
+    else alert('Erro: ' + err.message);
+  });
+}
+
+async function userOnData(data) {
+  if (!data?.type) return;
+  switch (data.type) {
+    case 'welcome': return applyWelcome(data.state);
+    case 'users-update':
+      S.users = new Map(data.users.map(u => [u.id, u]));
+      renderUsers(); applyMyPermissions(); return;
+    case 'chat':
+      const prevLen = S.messages.length;
+      addMessageLocal(data.msg);
+      if (S.messages.length > prevLen && data.msg.fromId !== S.peer?.id) beep(880, 0.05, 0.03);
+      return;
+    case 'pending-update':
+      S.pending = new Map(data.pending.map(p => [p.id, p]));
+      return updateRelayTags();
+    case 'delete-msg': {
+      const m = S.messages.find(x => x.id === data.msgId);
+      if (m) { m.deleted = true; persistMessage(m); }
+      return renderMessages();
+    }
+    case 'clear-history':
+      await idbClearByRoom('messages', S.code);
+      S.messages = []; S.pending.clear();
+      renderMessages(); renderPending(); return;
+    case 'settings-update':
+      S.settings = data.settings;
+      applySettings();
+      if ($('settingsModal').style.display !== 'none') renderSettingsModal();
+      return;
+    case 'typing': return showTyping(data.peerId, data.name);
+    case 'kick':
+      alert('Você foi removido da sala.\nMotivo: ' + (data.reason || '—'));
+      deleteKV('lastRoom'); S.peer?.destroy(); return location.reload();
+    case 'error': alert(data.message); return;
+  }
+}
+
+function serializeState() {
+  return {
+    settings: S.settings,
+    users: [...S.users.values()],
+    messages: S.messages,
+    pending: [...S.pending.values()]
+  };
+}
+
+async function applyWelcome(state) {
+  S.settings = state.settings || S.settings;
+  S.users = new Map((state.users || []).map(u => [u.id, u]));
+  S.messages = state.messages || [];
+  S.pending = new Map((state.pending || []).map(p => [p.id, p]));
+  await idbReplaceByRoom('messages', S.code, S.messages);
+  persistKV('lastRoom', { code: S.code, name: S.myName, role: 'user' });
+  applySettings(); renderMessages(); renderUsers(); renderPending(); applyMyPermissions();
+}
+
+function broadcastAll(data, exceptPeerId = null) {
+  for (const [pid, conn] of S.conns) {
+    if (pid === exceptPeerId || pid === 'host') continue;
+    try { conn.send(data); } catch (e) { console.warn('send fail', pid, e); }
+  }
+}
+function addMessageLocal(msg) {
+  S.messages.push(msg);
+  if (S.messages.length > MAX_MSG_HISTORY) {
+    const removed = S.messages.splice(0, S.messages.length - MAX_MSG_HISTORY);
+    if (S.isHost) removed.forEach(m => idbDelete('messages', m.id).catch(() => {}));
+  }
+  renderMessages(); persistMessage(msg);
+}
+function addSystemMessageHost(text) {
+  const msg = { id: uuid(), type: 'system', text, ts: Date.now() };
+  addMessageLocal(msg); broadcastAll({ type: 'chat', msg });
+}
+function addSystemMessageLocal(text) {
+  addMessageLocal({ id: uuid(), type: 'system', text, ts: Date.now() });
+}
+function updateRelayTags() {
+  const ids = new Set(S.pending.keys());
+  for (const m of S.messages) {
+    if (m.relayPending && !ids.has(m.relayPending)) {
+      delete m.relayPending;
+      persistMessage(m);
+    }
+  }
+  renderMessages(); renderPending();
+}
+
+/* ============================================================
+   TYPING
+   ============================================================ */
+let _myTypingSent = 0;
+function notifyTyping() {
+  const now = Date.now();
+  if (now - _myTypingSent < 1500) return;
+  _myTypingSent = now;
+  if (S.isHost) return;
+  const conn = S.conns.get('host');
+  if (conn?.open) conn.send({ type: 'typing' });
+}
+function showTyping(peerId, name) {
+  clearTimeout(S._typingTimers.get(peerId));
+  S._typingTimers.set(peerId, setTimeout(() => {
+    S._typingTimers.delete(peerId);
+    renderTypingLine();
+  }, TYPING_TIMEOUT_MS));
+  renderTypingLine();
+}
+function clearTyping(peerId) {
+  clearTimeout(S._typingTimers.get(peerId));
+  S._typingTimers.delete(peerId);
+  renderTypingLine();
+}
+function renderTypingLine() {
+  const line = $('typingLine'); if (!line) return;
+  const names = [];
+  for (const pid of S._typingTimers.keys()) {
+    const u = S.users.get(pid);
+    if (u) names.push(u.name);
+  }
+  if (!names.length) { line.textContent = ''; return; }
+  line.textContent = names.length === 1
+    ? `${names[0]} está digitando...`
+    : `${names.slice(0, 2).join(', ')}${names.length > 2 ? ' e outros' : ''} estão digitando...`;
+}
+
+/* ============================================================
+   ENTER / PERMISSIONS
+   ============================================================ */
+function enterRoom() {
+  showScreen('app');
+  $('roomCodeDisplay').textContent = S.code || '------';
+  applySettings(); renderUsers(); renderMessages(); renderPending(); applyMyPermissions();
+  updateSoundBtn();
+}
+function applyMyPermissions() {
+  const m = me(); if (!m) return;
+  $('settingsBtn').style.display = hasAnyAdminUI() ? 'block' : 'none';
+  $('botsQuickBtn').style.display = hasPerm('manageBots') ? 'block' : 'none';
+  $('togglePendingBtn').style.display = hasPerm('manageRelay') ? 'inline-block' : 'none';
+  $('searchToggleBtn').style.display = 'block';
+
+  if (!hasPerm('manageRelay')) $('pendingPanel').style.display = 'none';
+  if (!hasAnyAdminUI()) $('settingsModal').style.display = 'none';
+
+  renderUsers();
+  renderMessages();
+  if ($('pendingPanel').style.display !== 'none') renderPending();
+  if ($('settingsModal').style.display !== 'none') renderSettingsModal();
+}
+
+function applySettings() {
+  $('roomNameDisplay').textContent = S.settings.roomName;
+  $('mainTitle').textContent = S.settings.roomName;
+  renderTargetSelect();
+  $('setRoomName').value = S.settings.roomName;
+  $('setFreeChat').checked = S.settings.allowFreeChat;
+  renderQuickMentions();
+}
+
+/* ============================================================
+   RENDER USERS
+   ============================================================ */
+function renderUsers() {
+  const ul = $('userList'); ul.innerHTML = '';
+  const canKick = hasPerm('kickUsers');
+  const order = { operator: 0, admin: 1, user: 2 };
+  const users = [...S.users.values()].sort((a, b) => {
+    if (order[a.role] !== order[b.role]) return order[a.role] - order[b.role];
+    return a.name.localeCompare(b.name);
+  });
+  for (const u of users) {
+    const li = document.createElement('li'); li.className = 'user-item';
+    const span = document.createElement('span'); span.className = 'user-name'; span.textContent = u.name;
+    if (S._typingTimers.has(u.id)) {
+      const t = document.createElement('span'); t.className = 'user-typing'; t.textContent = '✏️';
+      span.appendChild(t);
+    }
+    li.appendChild(span);
+    if (u.role === 'operator') {
+      const r = document.createElement('span'); r.className = 'user-role role-op'; r.textContent = 'op';
+      li.appendChild(r);
+    } else if (u.role === 'admin') {
+      const r = document.createElement('span'); r.className = 'user-role role-admin'; r.textContent = 'adm';
+      li.appendChild(r);
+    }
+    if (canKick && u.id !== S.peer.id && u.role !== 'operator') {
+      const kb = document.createElement('button');
+      kb.className = 'kick-btn'; kb.title = 'Remover'; kb.textContent = '✕';
+      kb.onclick = () => kickUser(u.id);
+      li.appendChild(kb);
+    }
+    ul.appendChild(li);
+  }
+  $('userCount').textContent = S.users.size;
+}
+function kickUser(peerId) {
+  const u = S.users.get(peerId); if (!u) return;
+  if (!confirm(`Remover ${u.name} da sala?`)) return;
+  requestAction({ name: 'kick', targetId: peerId });
+}
+function doKickUser(peerId) {
+  const u = S.users.get(peerId); if (!u) return;
+  const conn = S.conns.get(peerId);
+  if (conn) {
+    try { conn.send({ type: 'kick', reason: 'Removido pelo operador/admin.' }); } catch {}
+    setTimeout(() => { try { conn.close(); } catch {} hostOnDisconnect(peerId); }, 300);
+  } else hostOnDisconnect(peerId);
+}
+
+/* ============================================================
+   RENDER MESSAGES
+   ============================================================ */
+let _searchQuery = '';
+function renderMessages() {
+  const c = $('messages');
+  const wasBottom = c.scrollHeight - c.scrollTop - c.clientHeight < 60;
+  c.innerHTML = '';
+  const canDel = hasPerm('deleteMessages');
+  const filter = _searchQuery.toLowerCase();
+
+  for (const m of S.messages) {
+    if (m.deleted) continue;
+    if (filter && !(m.text || '').toLowerCase().includes(filter) &&
+        !(m.fromName || '').toLowerCase().includes(filter)) continue;
+
+    const div = document.createElement('div'); div.className = 'msg ' + m.type;
+    const time = new Date(m.ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const delBtn = canDel ? `<button class="del-btn" data-id="${escapeHtml(m.id)}" title="Apagar">✕</button>` : '';
+
+    if (m.type === 'system') {
+      div.innerHTML = `<span class="text">${escapeHtml(m.text)}</span>`;
+    } else if (m.type === 'bot') {
+      const color = m.botColor || '#5865f2';
+      const emoji = m.botEmoji || '🤖';
+      div.style.borderLeft = '3px solid ' + color;
+      div.innerHTML =
+        `<span class="name" style="color:${escapeHtml(color)}"><span class="bot-emoji">${escapeHtml(emoji)}</span>${escapeHtml(m.fromName)}</span>` +
+        (m.replyToName ? ` <span class="time">→ @${escapeHtml(m.replyToName)}</span>` : '') +
+        `<span class="time">${time}</span>` +
+        `<div class="text">${escapeHtml(m.text)}</div>` + delBtn;
+    } else {
+      const botEmoji = m.relayBotEmoji ? `<span class="bot-emoji">${escapeHtml(m.relayBotEmoji)}</span>` : '';
+      const botColor = m.relayBotColor || '#8eb4ff';
+      div.innerHTML =
+        `<span class="name">${escapeHtml(m.fromName)}</span>` +
+        (m.relayBot ? ` <span class="time">→ <span style="color:${escapeHtml(botColor)}">${botEmoji}${escapeHtml(m.relayBot)}</span></span>` : '') +
+        `<span class="time">${time}</span>` +
+        (m.relayPending ? `<span class="pending-tag">⏳</span>` : '') +
+        `<div class="text">${escapeHtml(m.text)}</div>` + delBtn;
+    }
+    if (filter) div.classList.add('highlight');
+    c.appendChild(div);
+  }
+  if (canDel) c.querySelectorAll('.del-btn').forEach(b => b.onclick = () => deleteMessage(b.dataset.id));
+  if (wasBottom && !filter) c.scrollTop = c.scrollHeight;
+}
+function deleteMessage(msgId) { requestAction({ name: 'delete-msg', msgId }); }
+function doDeleteMessage(msgId) {
+  const m = S.messages.find(x => x.id === msgId); if (!m) return;
+  m.deleted = true; persistMessage(m);
+  broadcastAll({ type: 'delete-msg', msgId }); renderMessages();
+}
+
+/* ============================================================
+   BUSCA
+   ============================================================ */
+$('searchToggleBtn').onclick = () => {
+  const s = $('searchInput');
+  const showing = s.style.display !== 'none';
+  s.style.display = showing ? 'none' : 'inline-block';
+  if (!showing) s.focus();
+  else { s.value = ''; _searchQuery = ''; renderMessages(); }
+};
+$('searchInput').addEventListener('input', () => {
+  _searchQuery = $('searchInput').value.trim();
+  renderMessages();
+});
+
+/* ============================================================
+   RENDER PENDING
+   ============================================================ */
+function renderPending() {
+  if (!hasPerm('manageRelay')) { $('pendingCount').textContent = '0'; return; }
+  $('pendingCount').textContent = S.pending.size;
+  const list = $('pendingList'); list.innerHTML = '';
+  if (S.pending.size === 0) { list.innerHTML = '<p class="empty">Nenhum pedido pendente.</p>'; return; }
+
+  for (const relay of S.pending.values()) {
+    const card = document.createElement('div'); card.className = 'pending-card';
+    card.style.borderLeftColor = relay.botColor || '#5865f2';
+    card.innerHTML = `
+      <div class="pending-meta">
+        <strong>${escapeHtml(relay.userName)}</strong> → ${escapeHtml(relay.botEmoji || '🤖')} <span style="color:${escapeHtml(relay.botColor || '#8eb4ff')}">${escapeHtml(relay.botName || relay.bot)}</span>
+        ${relay.contextCount ? `<div class="pending-context">Contexto: ${relay.contextCount} turno(s) anteriores nesse par user↔bot</div>` : ''}
+      </div>
+      <div class="pending-text">${escapeHtml(relay.text)}</div>
+      <div class="pending-actions">
+        <button class="secondary copy-btn tiny">📋 Copiar mensagem</button>
+      </div>
+      <textarea class="pending-response" placeholder="Cole aqui a resposta do bot..."></textarea>
+      <div class="pending-actions">
+        <button class="primary deliver-btn">✅ Entregar como ${escapeHtml(relay.botName || 'bot')}</button>
+        <button class="danger cancel-btn">✕ Cancelar</button>
+      </div>`;
+    const cb = card.querySelector('.copy-btn');
+    cb.onclick = () => { safeCopy(relay.text); cb.textContent = '✓ Copiado'; setTimeout(() => cb.textContent = '📋 Copiar mensagem', 1500); };
+    card.querySelector('.deliver-btn').onclick = () => {
+      const t = card.querySelector('.pending-response').value.trim();
+      if (!t) return alert('Cole a resposta do bot.');
+      requestAction({ name: 'deliver-relay', relayId: relay.id, text: t });
+    };
+    card.querySelector('.cancel-btn').onclick = () => requestAction({ name: 'cancel-relay', relayId: relay.id });
+    list.appendChild(card);
+  }
+}
+
+function doDeliverRelay(relayId, text) {
+  const relay = S.pending.get(relayId); if (!relay) return;
+  S.pending.delete(relayId);
+  const orig = S.messages.find(m => m.relayPending === relayId);
+  if (orig) { delete orig.relayPending; persistMessage(orig); }
+  const botMsg = {
+    id: uuid(), type: 'bot', fromName: relay.botName || relay.bot,
+    botId: relay.botId, botEmoji: relay.botEmoji, botColor: relay.botColor,
+    replyToId: relay.id, replyToName: relay.userName,
+    text: String(text).slice(0, 4000), ts: Date.now(),
+    deliveredBy: S.myName
+  };
+  addMessageLocal(botMsg);
+  broadcastAll({ type: 'chat', msg: botMsg });
+  broadcastAll({ type: 'pending-update', pending: [...S.pending.values()] });
+  persistPending(); renderPending(); renderMessages();
+  beep(1046, 0.08, 0.04);
+}
+function doCancelRelay(relayId) {
+  S.pending.delete(relayId);
+  const orig = S.messages.find(m => m.relayPending === relayId);
+  if (orig) { delete orig.relayPending; persistMessage(orig); }
+  broadcastAll({ type: 'pending-update', pending: [...S.pending.values()] });
+  persistPending(); renderPending(); renderMessages();
+}
+
+/* ============================================================
+   TARGET SELECT + SPEAK AS BOT
+   ============================================================ */
+function renderTargetSelect() {
+  const sel = $('targetSelect'); const prev = sel.value;
+  sel.innerHTML = '<option value="">Chat geral (livre)</option>';
+  const online = S.settings.bots.filter(b => b.online || hasAnyAdminUI());
+  for (const b of online) {
+    const o = document.createElement('option');
+    o.value = b.id;
+    o.textContent = `${b.emoji} ${b.name}${!b.online ? ' (offline)' : ''}${b.adminOnly ? ' 🔒' : ''}`;
+    if (b.description) o.title = b.description;
+    sel.appendChild(o);
+  }
+  if (prev && (prev === '' || S.settings.bots.some(b => b.id === prev))) sel.value = prev;
+  updateSpeakAsBotVisibility();
+  updateInputPlaceholder();
+}
+
+/* SEGURANÇA UI: toggle 🎭 só aparece para o operador */
+function updateSpeakAsBotVisibility() {
+  const canSpeak = isOperator();
+  const hasBot = !!$('targetSelect').value;
+  const label = $('speakAsBotLabel');
+  const check = $('speakAsBotCheck');
+
+  if (canSpeak && hasBot) {
+    label.style.display = 'flex';
+  } else {
+    label.style.display = 'none';
+    check.checked = false;
+    S._speakAsBot = false;
+  }
+  updateInputAppearance();
+}
+
+function updateInputAppearance() {
+  const active = S._speakAsBot && $('targetSelect').value;
+  const area = $('inputArea');
+  const btn = $('sendBtn');
+  const label = $('speakAsBotLabel');
+
+  area.classList.toggle('speaking-as-bot', !!active);
+  btn.classList.toggle('speaking-as-bot', !!active);
+  label.classList.toggle('active', !!active);
+
+  if (active) {
+    const bot = findBot($('targetSelect').value);
+    btn.textContent = `🎭 Enviar como ${bot?.name || 'bot'}`;
+  } else {
+    btn.textContent = 'Enviar';
+  }
+}
+
+function updateInputPlaceholder() {
+  const targetBotId = $('targetSelect').value;
+  const isRelay = !!targetBotId;
+  const isSpeaking = S._speakAsBot && isRelay && isOperator();
+
+  if (isSpeaking) {
+    const bot = findBot(targetBotId);
+    $('messageInput').placeholder = `Falar como ${bot?.emoji || ''} ${bot?.name || 'bot'}... (Enter envia, Shift+Enter quebra linha)`;
+  } else if (isRelay) {
+    const bot = findBot(targetBotId);
+    $('messageInput').placeholder = bot?.greeting
+      ? `Mensagem para ${bot.emoji} ${bot.name}... (${bot.greeting})`
+      : `Mensagem para ${bot?.emoji || ''} ${bot?.name || ''}...`;
+  } else {
+    $('messageInput').placeholder = 'Digite sua mensagem... (Enter envia, Shift+Enter quebra linha)';
+  }
+}
+
+$('targetSelect').onchange = () => {
+  updateSpeakAsBotVisibility();
+  updateInputPlaceholder();
+};
+$('speakAsBotCheck').onchange = () => {
+  if (!isOperator()) {
+    $('speakAsBotCheck').checked = false;
+    S._speakAsBot = false;
+    return alert('Apenas o criador da sala pode falar como bot.');
+  }
+  S._speakAsBot = $('speakAsBotCheck').checked;
+  updateInputAppearance();
+  updateInputPlaceholder();
+};
+
+/* ============================================================
+   QUICK MENTIONS
+   ============================================================ */
+function renderQuickMentions() {
+  const c = $('quickMentions'); c.innerHTML = '';
+  const online = S.settings.bots.filter(b => b.online);
+  if (!online.length) { c.style.display = 'none'; return; }
+  c.style.display = 'flex';
+  for (const b of online) {
+    const chip = document.createElement('button');
+    chip.className = 'mention-chip'; chip.type = 'button';
+    chip.textContent = `${b.emoji} ${b.name}`;
+    chip.title = b.description || 'Falar com esse bot';
+    chip.onclick = () => {
+      $('targetSelect').value = b.id;
+      updateSpeakAsBotVisibility();
+      updateInputPlaceholder();
+      $('messageInput').focus();
+    };
+    c.appendChild(chip);
+  }
+}
+
+/* ============================================================
+   ENVIO
+   ============================================================ */
+$('sendBtn').onclick = sendMessage;
+$('messageInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+$('messageInput').addEventListener('input', () => {
+  const t = $('messageInput'); t.style.height = 'auto';
+  t.style.height = Math.min(t.scrollHeight, 120) + 'px';
+  notifyTyping();
+});
+
+function sendMessage() {
+  const ta = $('messageInput'); const text = ta.value.trim(); if (!text) return;
+  const targetBotId = $('targetSelect').value;
+  const speakingAsBot = S._speakAsBot && targetBotId;
+  ta.value = ''; ta.style.height = 'auto';
+
+  /* === MODO FALAR COMO BOT (SOMENTE OPERADOR) === */
+  if (speakingAsBot) {
+    if (!isOperator()) {
+      return alert('Apenas o criador da sala pode falar como bot.');
+    }
+    const bot = findBot(targetBotId);
+    if (!bot) return alert('Bot não encontrado.');
+
+    if (S.isHost) {
+      const botMsg = {
+        id: uuid(), type: 'bot', fromName: bot.name,
+        botId: bot.id, botEmoji: bot.emoji, botColor: bot.color,
+        text, ts: Date.now(),
+        spokenBy: S.myName
+      };
+      addMessageLocal(botMsg);
+      broadcastAll({ type: 'chat', msg: botMsg });
+      beep(1046, 0.05, 0.03);
+    } else {
+      const c = S.conns.get('host'); if (!c?.open) return alert('Sem conexão.');
+      c.send({ type: 'speak-as-bot', botId: targetBotId, text });
+    }
+    $('messageInput').focus();
+    return;
+  }
+
+  /* === FLUXO NORMAL === */
+  if (S.isHost) {
+    if (targetBotId) {
+      const bot = findBot(targetBotId);
+      if (!bot) return alert('Bot não encontrado.');
+      if (!bot.online) return alert(`O bot "${bot.name}" está offline.`);
+      const botPending = [...S.pending.values()].filter(r => r.botId === bot.id).length;
+      if (botPending >= bot.maxPending) return alert(`Fila do bot cheia (${bot.maxPending}).`);
+      const contextCount = S.messages.filter(m =>
+        (m.fromId === S.peer.id && m.relayBotId === bot.id) ||
+        (m.type === 'bot' && m.botId === bot.id && m.replyToId === S.peer.id)
+      ).length;
+      const relay = {
+        id: uuid(), userId: S.peer.id, userName: S.myName,
+        botId: bot.id, botName: bot.name, botEmoji: bot.emoji, botColor: bot.color,
+        text, ts: Date.now(), contextCount, userRole: 'operator'
+      };
+      S.pending.set(relay.id, relay);
+      const relayMsg = {
+        id: uuid(), type: 'user', fromId: S.peer.id, fromName: S.myName,
+        text, ts: Date.now(), relayPending: relay.id,
+        relayBot: bot.name, relayBotId: bot.id, relayBotEmoji: bot.emoji, relayBotColor: bot.color
+      };
+      addMessageLocal(relayMsg);
+      broadcastAll({ type: 'chat', msg: relayMsg });
+      broadcastAll({ type: 'pending-update', pending: [...S.pending.values()] });
+      persistPending(); renderPending();
+    } else {
+      const msg = { id: uuid(), type: 'user', fromId: S.peer.id, fromName: S.myName, text, ts: Date.now() };
+      addMessageLocal(msg); broadcastAll({ type: 'chat', msg });
+    }
+  } else {
+    const c = S.conns.get('host'); if (!c?.open) return alert('Sem conexão.');
+    if (targetBotId) c.send({ type: 'relay-request', botId: targetBotId, text });
+    else c.send({ type: 'chat', text });
+  }
+  $('messageInput').focus();
+}
+
+/* ============================================================
+   SETTINGS
+   ============================================================ */
+document.querySelectorAll('.stab').forEach(st => {
+  st.onclick = () => {
+    if (st.disabled) return;
+    document.querySelectorAll('.stab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.stab-content, #stab-danger').forEach(c => c.style.display = 'none');
+    st.classList.add('active');
+    const target = st.dataset.stab;
+    if (target === 'danger') $('stab-danger').style.display = 'block';
+    else $('stab-' + target).style.display = 'block';
+  };
+});
+
+$('settingsBtn').onclick = () => {
+  if (!hasAnyAdminUI()) return;
+  renderSettingsModal();
+  $('settingsModal').style.display = 'flex';
+};
+$('botsQuickBtn').onclick = () => {
+  if (!hasPerm('manageBots')) return;
+  renderSettingsModal();
+  const botsTab = document.querySelector('.stab[data-stab="bots"]');
+  if (botsTab && !botsTab.disabled) botsTab.click();
+  $('settingsModal').style.display = 'flex';
+};
+$('closeSettingsBtn').onclick = () => $('settingsModal').style.display = 'none';
+
+function renderSettingsModal() {
+  const tabs = document.querySelectorAll('.stab');
+  tabs.forEach(t => {
+    switch (t.dataset.stab) {
+      case 'general': t.disabled = !hasPerm('manageSettings'); break;
+      case 'bots': t.disabled = !hasPerm('manageBots'); break;
+      case 'users': t.disabled = !isOperator(); break;
+      case 'history': t.disabled = !hasPerm('manageHistory'); break;
+    }
+  });
+
+  const activeTab = document.querySelector('.stab.active');
+  if (activeTab?.disabled) {
+    const first = [...tabs].find(t => !t.disabled);
+    if (first) first.click();
+  }
+
+  $('stab-danger').style.display = isOperator() ? 'block' : 'none';
+  if (!isOperator()) $('stab-danger').style.display = 'none';
+
+  $('setRoomName').disabled = !hasPerm('manageSettings');
+  $('setFreeChat').disabled = !hasPerm('manageSettings');
+  renderBotsList();
+  if (isOperator()) renderAdminUsersList();
+}
+
+/* === BOTS === */
+function renderBotsList() {
+  const c = $('botsList'); c.innerHTML = '';
+  const editable = hasPerm('manageBots');
+  const canSpeakAsBot = isOperator(); /* SEGURANÇA UI: só operador vê o botão 🎭 */
+  for (const bot of S.settings.bots) {
+    const row = document.createElement('div'); row.className = 'bot-config-row';
+    row.style.borderLeftColor = bot.color;
+    row.innerHTML = `
+      <div class="bot-config-header">
+        <input type="text" class="bot-emoji-input" value="${escapeHtml(bot.emoji)}" maxlength="3" style="width:50px; text-align:center; flex:0 0 50px" ${editable ? '' : 'disabled'}>
+        <input type="text" class="bot-name-input" value="${escapeHtml(bot.name)}" maxlength="40" ${editable ? '' : 'disabled'}>
+        <input type="color" class="bot-color-input" value="${escapeHtml(bot.color)}" style="width:40px; flex:0 0 40px" ${editable ? '' : 'disabled'}>
+        ${editable ? '<button class="icon-btn remove-bot" title="Remover">🗑️</button>' : ''}
+      </div>
+      <div class="bot-config-grid">
+        <div class="full">
+          <label>Descrição (mostrada aos jogadores)</label>
+          <input type="text" class="bot-desc-input" value="${escapeHtml(bot.description || '')}" maxlength="120" ${editable ? '' : 'disabled'}>
+        </div>
+        <div class="full">
+          <label>Greeting / dica de personalidade (opcional)</label>
+          <input type="text" class="bot-greet-input" value="${escapeHtml(bot.greeting || '')}" maxlength="200" ${editable ? '' : 'disabled'}>
+        </div>
+        <div>
+          <label>Máx. pedidos na fila</label>
+          <input type="number" class="bot-maxpending-input" value="${bot.maxPending}" min="1" max="20" ${editable ? '' : 'disabled'}>
+        </div>
+        <div style="justify-content:flex-end">
+          <label>&nbsp;</label>
+          <label><input type="checkbox" class="bot-online-input" ${bot.online ? 'checked' : ''} ${editable ? '' : 'disabled'}> Online</label>
+          <label><input type="checkbox" class="bot-adminonly-input" ${bot.adminOnly ? 'checked' : ''} ${editable ? '' : 'disabled'}> Só admins</label>
+        </div>
+      </div>
+      <div class="bot-config-footer">
+        <button class="secondary speak-btn tiny" title="Postar no chat como este bot (somente criador)">🎭 Falar como este bot</button>
+      </div>`;
+
+    if (editable) {
+      row.querySelector('.bot-name-input').onchange = (e) => updateBot(bot.id, { name: e.target.value.trim().slice(0, 40) || 'Bot' });
+      row.querySelector('.bot-emoji-input').onchange = (e) => updateBot(bot.id, { emoji: e.target.value.trim() || '🤖' });
+      row.querySelector('.bot-color-input').onchange = (e) => updateBot(bot.id, { color: e.target.value });
+      row.querySelector('.bot-desc-input').onchange = (e) => updateBot(bot.id, { description: e.target.value.trim().slice(0, 120) });
+      row.querySelector('.bot-greet-input').onchange = (e) => updateBot(bot.id, { greeting: e.target.value.trim().slice(0, 200) });
+      row.querySelector('.bot-maxpending-input').onchange = (e) => updateBot(bot.id, { maxPending: Math.max(1, Math.min(20, parseInt(e.target.value) || 3)) });
+      row.querySelector('.bot-online-input').onchange = (e) => updateBot(bot.id, { online: e.target.checked });
+      row.querySelector('.bot-adminonly-input').onchange = (e) => updateBot(bot.id, { adminOnly: e.target.checked });
+      row.querySelector('.remove-bot').onclick = () => {
+        if (!confirm(`Remover o bot "${bot.name}"?`)) return;
+        saveSettings({ bots: S.settings.bots.filter(b => b.id !== bot.id) });
+      };
+    }
+    const speakBtn = row.querySelector('.speak-btn');
+    if (canSpeakAsBot) {
+      speakBtn.onclick = () => {
+        $('settingsModal').style.display = 'none';
+        $('targetSelect').value = bot.id;
+        S._speakAsBot = true;
+        $('speakAsBotCheck').checked = true;
+        updateSpeakAsBotVisibility();
+        $('messageInput').focus();
+        $('messageInput').placeholder = `Falar como ${bot.emoji} ${bot.name}...`;
+      };
+    } else {
+      speakBtn.style.display = 'none';
+    }
+    c.appendChild(row);
+  }
+  $('newBotName').style.display = editable ? 'block' : 'none';
+  $('addBotBtn').style.display = editable ? 'inline-block' : 'none';
+}
+
+function updateBot(botId, patch) {
+  const bots = S.settings.bots.map(b => b.id === botId ? { ...b, ...patch } : b);
+  saveSettings({ bots });
+}
+
+$('addBotBtn').onclick = () => {
+  const n = $('newBotName').value.trim().slice(0, 40); if (!n) return;
+  if (S.settings.bots.length >= MAX_BOTS) return alert('Máximo ' + MAX_BOTS + ' bots.');
+  $('newBotName').value = '';
+  saveSettings({ bots: [...S.settings.bots, makeBot(n)] });
+};
+
+/* === ADMINS === */
+function renderAdminUsersList() {
+  const c = $('usersAdminList'); c.innerHTML = '';
+  const selfId = S.peer?.id;
+  for (const u of S.users.values()) {
+    if (u.id === selfId) continue;
+    const row = document.createElement('div'); row.className = 'admin-user-row';
+
+    if (u.role === 'admin') {
+      row.innerHTML = `
+        <div class="admin-user-header">
+          <span class="user-name">${escapeHtml(u.name)}</span>
+          <span class="user-role role-admin">ADMIN</span>
+        </div>
+        <div class="admin-perms"></div>
+        <button class="danger demote-btn">Rebaixar a usuário</button>`;
+      const permsBox = row.querySelector('.admin-perms');
+      for (const [k, label] of Object.entries(PERMS)) {
+        const lab = document.createElement('label');
+        const cb = document.createElement('input');
+        cb.type = 'checkbox'; cb.checked = !!u.perms?.[k];
+        cb.onchange = () => {
+          const cur = S.users.get(u.id); if (!cur) return;
+          const newPerms = { ...(cur.perms || {}), [k]: cb.checked };
+          requestAction({ name: 'promote', targetId: u.id, perms: newPerms });
+        };
+        lab.appendChild(cb); lab.appendChild(document.createTextNode(label));
+        permsBox.appendChild(lab);
+      }
+      row.querySelector('.demote-btn').onclick = () => {
+        if (!confirm(`Rebaixar ${u.name} a usuário comum?`)) return;
+        requestAction({ name: 'demote', targetId: u.id });
+      };
+    } else {
+      row.innerHTML = `
+        <div class="admin-user-header">
+          <span class="user-name">${escapeHtml(u.name)}</span>
+        </div>
+        <button class="primary promote-btn">Promover a admin</button>`;
+      row.querySelector('.promote-btn').onclick = () =>
+        requestAction({ name: 'promote', targetId: u.id, perms: {} });
+    }
+    c.appendChild(row);
+  }
+  if (!c.children.length) c.innerHTML = '<p class="empty">Nenhum outro participante.</p>';
+}
+
+function doPromote(targetId, perms) {
+  const u = S.users.get(targetId); if (!u || u.role === 'operator') return;
+  u.role = 'admin'; u.perms = { ...(perms || {}) };
+  S._adminNames.set(u.name.toLowerCase(), u.perms);
+  persistRoom();
+  broadcastAll({ type: 'users-update', users: [...S.users.values()] });
+  renderUsers(); renderSettingsModal();
+}
+function doDemote(targetId) {
+  const u = S.users.get(targetId); if (!u || u.role === 'operator') return;
+  S._adminNames.delete(u.name.toLowerCase());
+  u.role = 'user'; u.perms = {};
+  persistRoom();
+  broadcastAll({ type: 'users-update', users: [...S.users.values()] });
+  renderUsers(); renderSettingsModal();
+}
+
+/* === SETTINGS SAVE === */
+$('setRoomName').onchange = () => saveSettings({ roomName: $('setRoomName').value.trim().slice(0, 40) || 'Relay Chat' });
+$('setFreeChat').onchange = () => saveSettings({ allowFreeChat: $('setFreeChat').checked });
+
+function saveSettings(partial) {
+  requestAction({ name: 'update-settings', partial });
+}
+function doUpdateSettings(partial) {
+  S.settings = { ...S.settings, ...(partial || {}) };
+  applySettings();
+  broadcastAll({ type: 'settings-update', settings: S.settings });
+  persistRoom();
+  if ($('settingsModal').style.display !== 'none') renderSettingsModal();
+  renderQuickMentions();
+}
+
+/* === HISTÓRICO === */
+$('exportBtn').onclick = () => {
+  if (!hasPerm('manageHistory')) return;
+  const data = { code: S.code, settings: S.settings, messages: S.messages, exportedAt: new Date().toISOString() };
+  downloadJSON(data, `relaychat-${S.code}-${new Date().toISOString().slice(0,10)}.json`);
+};
+$('exportFullBtn').onclick = async () => {
+  if (!hasPerm('manageHistory')) return;
+  const roomRecord = await idbGet('rooms', S.code);
+  const allMessages = await idbGetAllByIndex('messages', 'roomCode', S.code);
+  const allPending = await idbGetAllByIndex('pending', 'roomCode', S.code);
+  downloadJSON({ room: roomRecord, messages: allMessages, pending: allPending, exportedAt: new Date().toISOString() },
+    `relaychat-full-${S.code}-${new Date().toISOString().slice(0,10)}.json`);
+};
+function downloadJSON(data, filename) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob); const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+$('clearHistoryBtn').onclick = () => {
+  if (!hasPerm('manageHistory')) return;
+  if (!confirm('Apagar TODO o histórico desta sala?\n\nNão pode ser desfeito.')) return;
+  requestAction({ name: 'clear-history' });
+};
+async function doClearHistory() {
+  await idbClearByRoom('messages', S.code);
+  await idbClearByRoom('pending', S.code);
+  S.messages = []; S.pending.clear();
+  broadcastAll({ type: 'clear-history' });
+  renderMessages(); renderPending();
+}
+$('deleteRoomBtn').onclick = async () => {
+  if (!isOperator()) return;
+  if (!confirm('EXCLUIR a sala ' + S.code + ' permanentemente?\n\nOs participantes serão desconectados.\nNão pode ser desfeito.')) return;
+  await idbClearByRoom('messages', S.code);
+  await idbClearByRoom('pending', S.code);
+  await idbDelete('rooms', S.code);
+  await deleteKV('lastRoom');
+  broadcastAll({ type: 'kick', reason: 'A sala foi excluída.' });
+  S.peer?.destroy(); setTimeout(() => location.reload(), 200);
+};
+
+/* ============================================================
+   DISPATCHER
+   ============================================================ */
+function requestAction(action) {
+  if (S.isHost) return executeHostAction(S.peer.id, action);
+  const conn = S.conns.get('host');
+  if (conn?.open) conn.send({ type: 'admin-action', action });
+}
+function executeHostAction(requesterId, action) {
+  if (!S.isHost || !action?.name) return;
+  const req = S.users.get(requesterId); if (!req) return;
+  const isOp = req.role === 'operator';
+  const ok = (p) => isOp || (req.role === 'admin' && !!req.perms?.[p]);
+
+  switch (action.name) {
+    case 'kick':
+      if (!ok('kickUsers')) return;
+      if (action.targetId === requesterId) return;
+      { const t = S.users.get(action.targetId);
+        if (!t || t.role === 'operator') return; doKickUser(action.targetId); }
+      break;
+    case 'delete-msg':
+      if (!ok('deleteMessages')) return;
+      doDeleteMessage(action.msgId); break;
+    case 'update-settings':
+      if (!ok('manageSettings') && !ok('manageBots')) return;
+      doUpdateSettings(action.partial); break;
+    case 'deliver-relay':
+      if (!ok('manageRelay')) return;
+      doDeliverRelay(action.relayId, action.text); break;
+    case 'cancel-relay':
+      if (!ok('manageRelay')) return;
+      doCancelRelay(action.relayId); break;
+    case 'clear-history':
+      if (!ok('manageHistory')) return;
+      doClearHistory(); break;
+    case 'promote':
+      if (!isOp) return; doPromote(action.targetId, action.perms); break;
+    case 'demote':
+      if (!isOp) return; doDemote(action.targetId); break;
+  }
+}
+
+/* ============================================================
+   BOTÕES
+   ============================================================ */
+$('togglePendingBtn').onclick = () => {
+  const p = $('pendingPanel');
+  p.style.display = p.style.display === 'none' ? 'flex' : 'none';
+  renderPending();
+};
+$('closePendingBtn').onclick = () => $('pendingPanel').style.display = 'none';
+$('copyCodeBtn').onclick = () => {
+  safeCopy(S.code); const b = $('copyCodeBtn');
+  b.textContent = '✓'; setTimeout(() => b.textContent = '📋', 1200);
+};
+$('leaveBtn').onclick = () => {
+  if (S.isHost) {
+    if (!confirm('Sair da sala?\n\nO histórico fica salvo. Você poderá retomar depois.')) return;
+    broadcastAll({ type: 'kick', reason: 'O operador saiu.' });
+  }
+  S.peer?.destroy(); setTimeout(() => location.reload(), 200);
+};
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') $('settingsModal').style.display = 'none';
+});
+
+/* ============================================================
+   RETOMADA
+   ============================================================ */
+async function initResume() {
+  try { await getDB(); } catch { return; }
+  const saved = await getKV('lastRoom'); if (!saved?.code) return;
+  const msgs = await idbGetAllByIndex('messages', 'roomCode', saved.code);
+  const roomRecord = await idbGet('rooms', saved.code);
+  const lastAct = roomRecord?.lastActivity ? new Date(roomRecord.lastActivity).toLocaleString('pt-BR') : 'desconhecida';
+  const roleLabel = saved.role === 'operator' ? 'como <b>operador</b>' : 'como <b>jogador</b>';
+  $('resumeInfo').innerHTML =
+    `Sala <span class="rb-code">${escapeHtml(saved.code)}</span> ${roleLabel}<br>` +
+    `Nome: <b>${escapeHtml(saved.name || '—')}</b> · ${msgs.length} mensagem(ns) salva(s)<br>` +
+    `Última atividade: ${escapeHtml(lastAct)}`;
+  $('resumeBanner').style.display = 'block';
+
+  $('resumeBtn').onclick = async () => {
+    $('resumeBtn').disabled = true; $('resumeBtn').textContent = 'Conectando...';
+    if (saved.role === 'operator') {
+      if (!roomRecord) { alert('Registro da sala não encontrado.'); return; }
+      const peer = new Peer('relaychat-' + saved.code);
+      peer.on('open', async () => {
+        S.peer = peer; S.isHost = true; S.code = saved.code;
+        S.myName = saved.name || roomRecord.hostName || 'Operador';
+        S.settings = roomRecord.settings || S.settings;
+        S._createdAt = roomRecord.createdAt;
+        if (Array.isArray(roomRecord.admins)) {
+          for (const a of roomRecord.admins) {
+            if (a?.name) S._adminNames.set(a.name.toLowerCase(), a.perms || {});
+          }
+        }
+        S.users.set(peer.id, { id: peer.id, name: S.myName, role: 'operator', perms: {} });
+
+        const stored = await idbGetAllByIndex('messages', 'roomCode', saved.code);
+        stored.sort((a, b) => a.ts - b.ts);
+        S.messages = stored.map(m => { const c = { ...m }; delete c.roomCode; return c; });
+        const pend = await idbGetAllByIndex('pending', 'roomCode', saved.code);
+        S.pending = new Map(pend.map(p => { const c = { ...p }; delete c.roomCode; return [c.id, c]; }));
+
+        location.hash = saved.code;
+        peer.on('connection', onHostNewConnection);
+        enterRoom();
+        addSystemMessageHost('Sala retomada.');
+      });
+      peer.on('error', (err) => {
+        $('resumeBtn').disabled = false; $('resumeBtn').textContent = 'Retomar';
+        if (err.type === 'unavailable-id') alert('Código ' + saved.code + ' em uso (outra aba?).');
+        else alert('Erro: ' + err.message);
+      });
+    } else {
+      $('joinCode').value = saved.code; $('joinName').value = saved.name || '';
+      document.querySelector('[data-tab="join"]').click();
+      $('joinBtn').click();
+    }
+  };
+  $('dismissResumeBtn').onclick = async () => {
+    $('resumeBanner').style.display = 'none'; await deleteKV('lastRoom');
+  };
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+showScreen('setup');
+initResume();
+</script>
+</body>
+</html>
