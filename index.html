@@ -2,8 +2,8 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<!-- BUILD: v11.1-whitespace — preserva quebras de linha nas mensagens -->
-<title>Relay Chat</title>
+<!-- BUILD: v12 — Projeto Hermes + Pollinations AI -->
+<title>Projeto Hermes</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <style>
@@ -16,12 +16,15 @@
   input:focus, textarea:focus, select:focus { border-color: #5865f2; }
   input:disabled, textarea:disabled { opacity: 0.6; cursor: not-allowed; }
   input[type=color] { padding: 2px; height: 34px; cursor: pointer; }
+  input[type=range] { padding: 0; }
+  textarea { resize: vertical; min-height: 60px; font-family: inherit; }
   button.primary { background: #5865f2; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; }
   button.primary:hover:not(:disabled) { background: #4752c4; }
   button.primary.speaking-as-bot { background: #f59e0b; }
   button.primary.speaking-as-bot:hover:not(:disabled) { background: #d97706; }
   button.secondary { background: #2a2a2e; color: #e6e6e8; border: 1px solid #3a3a3f; padding: 6px 10px; border-radius: 6px; }
   button.danger { background: #b91c1c; color: white; border: none; padding: 6px 10px; border-radius: 6px; }
+  button.success { background: #16a34a; color: white; border: none; padding: 6px 10px; border-radius: 6px; }
   button.icon-btn { background: transparent; border: none; color: #999; padding: 4px 6px; border-radius: 4px; }
   button.icon-btn:hover { background: #2a2a2e; color: #fff; }
   button.tiny { padding: 3px 8px; font-size: 11px; }
@@ -95,30 +98,19 @@
   .msg .name { font-weight: 600; color: #8eb4ff; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; }
   .msg .name .bot-emoji { margin-right: 0; }
   .msg .time { font-size: 10px; color: #666; margin-left: 6px; }
-  /* CORREÇÃO: preserva quebras de linha e espaços múltiplos */
-  .msg .text {
-    margin-top: 2px;
-    white-space: pre-wrap;
-    word-break: break-word;
-    overflow-wrap: anywhere;
-    unicode-bidi: plaintext;
-  }
+  .msg .text { margin-top: 2px; white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; unicode-bidi: plaintext; }
   .msg .pending-tag { color: #f59e0b; font-size: 12px; margin-left: 6px; }
   .msg .del-btn { position: absolute; top: 4px; right: 4px; background: #1a1a1d; border: none; color: #999; width: 20px; height: 20px; border-radius: 4px; visibility: hidden; font-size: 12px; }
   .msg:hover .del-btn { visibility: visible; }
   .msg .del-btn:hover { color: #ef4444; }
   .msg.highlight { outline: 2px solid #f59e0b; }
   .typing-line { font-size: 11px; color: #4ade80; padding: 2px 16px; min-height: 16px; font-style: italic; }
+  .typing-line .ai-thinking { color: #f59e0b; }
 
   .bot-avatar-img {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    object-fit: cover;
-    vertical-align: middle;
-    border: 1px solid rgba(255,255,255,0.15);
-    display: inline-block;
-    flex-shrink: 0;
+    width: 16px; height: 16px; border-radius: 50%; object-fit: cover;
+    vertical-align: middle; border: 1px solid rgba(255,255,255,0.15);
+    display: inline-block; flex-shrink: 0;
   }
 
   .input-area { padding: 12px; border-top: 1px solid #2a2a2e; transition: background 0.2s; background: #17181b; }
@@ -152,7 +144,7 @@
   .empty { text-align: center; color: #666; font-size: 12px; padding: 20px 0; }
 
   .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
-  .modal-card { background: #17181b; border: 1px solid #2a2a2e; border-radius: 12px; padding: 24px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+  .modal-card { background: #17181b; border: 1px solid #2a2a2e; border-radius: 12px; padding: 24px; width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; }
   .modal-card h2 { margin: 0 0 16px; font-size: 18px; }
   .modal-card h3 { margin: 20px 0 8px; font-size: 13px; color: #f59e0b; text-transform: uppercase; letter-spacing: 0.5px; }
   .modal-card label { display: block; margin: 14px 0 6px; color: #bbb; font-size: 13px; }
@@ -171,37 +163,16 @@
 
   .bg-picker-row { display: flex; gap: 10px; align-items: stretch; margin: 8px 0; }
   .bg-preview {
-    width: 140px;
-    height: 80px;
-    border-radius: 6px;
-    border: 1px solid #333;
-    background-color: #141415;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #666;
-    font-size: 11px;
-    flex: 0 0 140px;
-    text-align: center;
-    padding: 4px;
+    width: 140px; height: 80px; border-radius: 6px; border: 1px solid #333;
+    background-color: #141415; background-size: cover; background-position: center; background-repeat: no-repeat;
+    display: flex; align-items: center; justify-content: center;
+    color: #666; font-size: 11px; flex: 0 0 140px; text-align: center; padding: 4px;
   }
   .bg-picker-actions { display: flex; flex-direction: column; gap: 6px; flex: 1; justify-content: center; }
   .bg-picker-actions button, .bg-upload-label {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    text-align: center;
-    padding: 8px 12px;
-    font-size: 12px;
-    cursor: pointer;
-    background: #2a2a2e;
-    color: #e6e6e8;
-    border: 1px solid #3a3a3f;
-    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    text-align: center; padding: 8px 12px; font-size: 12px; cursor: pointer;
+    background: #2a2a2e; color: #e6e6e8; border: 1px solid #3a3a3f; border-radius: 6px;
   }
   .bg-upload-label:hover { background: #3a3a3f; }
 
@@ -210,20 +181,10 @@
   .bot-config-header input[type=text] { flex: 1; font-weight: 600; }
 
   .bot-avatar-picker {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: #141415;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    border: 2px solid #333;
-    overflow: hidden;
-    flex: 0 0 44px;
-    font-size: 22px;
-    position: relative;
-    transition: border-color 0.15s;
+    width: 44px; height: 44px; border-radius: 50%; background: #141415;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    border: 2px solid #333; overflow: hidden; flex: 0 0 44px; font-size: 22px;
+    position: relative; transition: border-color 0.15s;
   }
   .bot-avatar-picker:hover { border-color: #5865f2; }
   .bot-avatar-picker img { width: 100%; height: 100%; object-fit: cover; }
@@ -234,11 +195,29 @@
   .bot-config-grid > div { display: flex; flex-direction: column; }
   .bot-config-grid label { margin: 0 0 2px; font-size: 11px; color: #888; }
   .bot-config-grid .full { grid-column: 1 / -1; }
+  .bot-config-grid textarea { min-height: 60px; font-size: 12px; }
   .bot-config-footer { display: flex; gap: 6px; margin-top: 8px; align-items: center; flex-wrap: wrap; font-size: 12px; }
   .bot-config-footer label { margin: 0; display: flex; align-items: center; gap: 4px; }
   .add-bot-row { display: flex; gap: 6px; margin-top: 8px; }
   .add-bot-row input { flex: 1; }
   .add-bot-row button { background: #2a2a2e; border: 1px solid #3a3a3f; color: #e6e6e8; padding: 0 12px; border-radius: 6px; }
+
+  .ai-toggle-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; margin: 8px 0;
+    background: #14210f; border: 1px solid #2f5622; border-radius: 6px;
+    font-size: 12px; color: #a7d4a0;
+  }
+  .ai-toggle-row input[type=checkbox] { width: auto; margin: 0; cursor: pointer; }
+  .ai-toggle-row.off { background: #1c1c1f; border-color: #2a2a2e; color: #888; }
+
+  .ai-status {
+    display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 4px;
+    background: #16a34a; color: white; font-weight: 600; margin-left: 4px;
+  }
+  .ai-status.off { background: #555; }
+  .ai-status.testing { background: #f59e0b; animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: 0.5; } }
 
   .admin-user-row { background: #1c1c1f; border: 1px solid #2a2a2e; border-radius: 8px; padding: 10px; margin-bottom: 8px; }
   .admin-user-row.offline { opacity: 0.6; }
@@ -262,7 +241,16 @@
   .quick-mention { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px; }
   .mention-chip { background: #2a2a2e; border: 1px solid #3a3a3f; color: #8eb4ff; padding: 3px 8px; border-radius: 10px; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
   .mention-chip:hover { background: #3a3a3f; }
+  .mention-chip.ai { border-color: #16a34a; color: #a7d4a0; }
   .mention-avatar { width: 12px; height: 12px; border-radius: 50%; object-fit: cover; }
+
+  .help-box {
+    background: #0f1f33; border: 1px solid #2a4a6f; border-radius: 6px;
+    padding: 10px 12px; margin: 10px 0; font-size: 12px; line-height: 1.6;
+    color: #b8c8dd;
+  }
+  .help-box code { background: #0a0a0b; padding: 1px 5px; border-radius: 3px; color: #8eb4ff; font-family: ui-monospace, monospace; font-size: 11px; }
+  .help-box a { color: #8eb4ff; }
 
   @media (max-width: 900px) {
     #app { grid-template-columns: 1fr; }
@@ -275,8 +263,8 @@
 
 <div id="setup">
   <div class="setup-card">
-    <h1>Relay Chat</h1>
-    <p class="subtitle">Sala de chat com bots e relay manual</p>
+    <h1>⚡ Projeto Hermes</h1>
+    <p class="subtitle">Salas de RPG com bots autônomos</p>
     <div id="resumeBanner" class="resume-banner" style="display:none">
       <p class="rb-title">💾 Sala salva encontrada</p>
       <p class="rb-info" id="resumeInfo"></p>
@@ -291,9 +279,9 @@
       <button class="tab" data-tab="join">🎮 Convidado</button>
     </div>
     <div id="tab-create" class="tab-content">
-      <p class="tab-desc">Crie uma sala nova. Você vira o operador e pode convidar pessoas depois.</p>
+      <p class="tab-desc">Crie uma sala. Você será o operador e poderá criar bots com IA própria.</p>
       <label>Seu nome (operador)</label>
-      <input id="createName" placeholder="Ex: Hermes" maxlength="40">
+      <input id="createName" placeholder="Ex: Mestre" maxlength="40">
       <button id="createBtn" class="primary">Criar sala</button>
     </div>
     <div id="tab-join" class="tab-content" style="display:none">
@@ -310,7 +298,7 @@
 <div id="app" style="display:none">
   <aside class="sidebar">
     <div class="sidebar-header">
-      <h2 id="roomNameDisplay">Relay Chat</h2>
+      <h2 id="roomNameDisplay">Projeto Hermes</h2>
       <div class="room-code">
         <span id="roomCodeDisplay" class="code hidden">🔒 oculto</span>
         <button id="copyCodeBtn" class="icon-btn" title="Copiar código" style="display:none">📋</button>
@@ -334,7 +322,7 @@
   <main class="main">
     <div class="main-header">
       <div class="main-header-row">
-        <div id="mainTitle">Chat geral</div>
+        <div id="mainTitle">Chat</div>
         <div class="header-actions">
           <input id="searchInput" class="search-input" placeholder="🔍 Buscar..." style="display:none">
           <button id="searchToggleBtn" class="icon-btn" title="Buscar">🔍</button>
@@ -374,7 +362,7 @@
       <h3>Fila de relay manual</h3>
       <button id="closePendingBtn" class="icon-btn">✕</button>
     </div>
-    <p class="hint">Copie a mensagem → leve ao Spicychat → cole a resposta aqui → entregue ao usuário.</p>
+    <p class="hint">Bots com <b>IA Automática desligada</b> aparecem aqui. Bots com IA ligada respondem sozinhos.</p>
     <div id="pendingList" class="pending-list"></div>
   </aside>
 </div>
@@ -386,7 +374,7 @@
     <div class="settings-tabs">
       <button class="stab active" data-stab="general">Geral</button>
       <button class="stab" data-stab="invite">Convite</button>
-      <button class="stab" data-stab="bots">Bots</button>
+      <button class="stab" data-stab="bots">Bots & IA</button>
       <button class="stab" data-stab="users">Usuários</button>
       <button class="stab" data-stab="bans">Banidos</button>
       <button class="stab" data-stab="history">Histórico</button>
@@ -409,15 +397,14 @@
         </div>
       </div>
       <p style="font-size:11px; color:#666; margin-top:6px; line-height:1.5">
-        A imagem é comprimida automaticamente (~1280px, ~100KB) para não pesar. Um overlay escuro automático é aplicado para manter o texto legível.
+        A imagem é comprimida automaticamente (~1280px, ~100KB). Um overlay escuro é aplicado para manter o texto legível.
       </p>
     </div>
 
     <div id="stab-invite" class="stab-content" style="display:none">
       <h3>Código de convite</h3>
       <p style="font-size:12px; color:#888; margin:0 0 12px; line-height:1.5">
-        O código é <b>fixo até ser renovado manualmente</b>. Renovar invalida o código atual imediatamente —
-        quem já está na sala continua dentro, mas novos convidados precisarão do novo código.
+        O código é <b>fixo até ser renovado manualmente</b>. Renovar invalida o código atual imediatamente.
       </p>
       <div class="invite-box">
         <div class="ib-label">Código atual</div>
@@ -428,18 +415,16 @@
         </div>
       </div>
       <button id="renewInviteBtn" class="primary" style="width:100%; margin-top:12px">🔄 Renovar código de convite</button>
-      <p style="font-size:11px; color:#666; margin-top:8px; line-height:1.5">
-        ⚠️ <b>Atenção:</b> só renove se o código atual tiver vazado ou você quiser bloquear novos entrantes.
-        Quem já está na sala <b>não</b> é afetado.
-      </p>
     </div>
 
     <div id="stab-bots" class="stab-content" style="display:none">
-      <p style="font-size:12px; color:#888; margin:0 0 8px">Crie e personalize os bots. <b style="color:#f59e0b">Apenas o criador da sala</b> pode usar "🎭 Falar como este bot". Clique no avatar para enviar uma imagem.</p>
+      <div class="help-box">
+        💡 Cada bot tem uma "ficha" (personalidade, cenário, exemplos). Com <b>IA Automática ligada</b>, ele responde sozinho usando a API gratuita do <a href="https://pollinations.ai" target="_blank">Pollinations</a> — sem custo, sem chave, sem limite rígido. Desligado = fila manual (você responde por ele).
+      </div>
       <div id="botsList"></div>
       <div class="add-bot-row">
         <input id="newBotName" placeholder="Nome do novo bot" maxlength="40">
-        <button id="addBotBtn">+ Adicionar</button>
+        <button id="addBotBtn">+ Adicionar bot</button>
       </div>
     </div>
 
@@ -475,7 +460,7 @@
 
 <script>
 /* ============================================================
-   RELAY CHAT v11.1 — quebras de linha preservadas
+   PROJETO HERMES v12 — integração com Pollinations AI
    ============================================================ */
 
 const $ = (id) => document.getElementById(id);
@@ -553,6 +538,7 @@ const RATE_LIMIT_MS = 800;
 const TYPING_TIMEOUT_MS = 2500;
 const AVATAR_MAX_BYTES = 400000;
 const BG_MAX_BYTES = 500000;
+const AI_TIMEOUT_MS = 60000;
 
 const PERMS = {
   kickUsers:      'Expulsar usuários',
@@ -566,14 +552,35 @@ const PERMS = {
   shareInvite:    'Compartilhar e renovar código de convite'
 };
 
+const AI_MODELS = [
+  { value: 'openai',       label: 'OpenAI (padrão, equilibrado)' },
+  { value: 'openai-fast',  label: 'OpenAI Fast (rápido)' },
+  { value: 'openai-large', label: 'OpenAI Large (melhor qualidade)' },
+  { value: 'mistral',      label: 'Mistral' },
+  { value: 'llama',        label: 'Llama' },
+  { value: 'deepseek',     label: 'DeepSeek' }
+];
+
 function makeBot(name = 'Novo Bot', opts = {}) {
   return {
     id: uuid(), name, emoji: '🤖', color: '#5865f2', avatar: '',
     description: '', greeting: '', online: true,
-    adminOnly: false, maxPending: 3, ...opts
+    adminOnly: false, maxPending: 3,
+    /* === Campos de IA === */
+    personality: '',
+    scenario: '',
+    examples: '',
+    autoMode: false,
+    model: 'openai',
+    temperature: 0.8,
+    maxHistory: 20,
+    ...opts
   };
 }
 
+/* ============================================================
+   PERSISTÊNCIA
+   ============================================================ */
 const DB_NAME = 'relaychat';
 const DB_VERSION = 1;
 let _db = null;
@@ -691,11 +698,14 @@ function persistPending() {
   idbReplaceByRoom('pending', S.code, [...S.pending.values()]).catch(e => console.error(e));
 }
 
+/* ============================================================
+   STATE
+   ============================================================ */
 const S = {
   peer: null, conns: new Map(), isHost: false, code: null, myName: '',
   users: new Map(), messages: [], pending: new Map(),
   settings: {
-    roomName: 'Relay Chat',
+    roomName: 'Projeto Hermes',
     bots: [makeBot('Bot A'), makeBot('Bot B')],
     allowFreeChat: true,
     background: ''
@@ -707,9 +717,13 @@ const S = {
   _rateLimit: new Map(),
   _typingTimers: new Map(),
   _speakAsBot: false,
-  _inviteToken: ''
+  _inviteToken: '',
+  _botThinking: new Map()  /* botId -> true enquanto processa IA */
 };
 
+/* ============================================================
+   HELPERS
+   ============================================================ */
 function me() { return S.users.get(S.peer?.id); }
 function isOperator() { return me()?.role === 'operator'; }
 function hasPerm(p) {
@@ -769,6 +783,9 @@ function isValidInviteToken(token) {
   return String(token).toUpperCase().trim() === S._inviteToken.toUpperCase();
 }
 
+/* ============================================================
+   SOM
+   ============================================================ */
 let _audioCtx = null;
 let _soundEnabled = localStorage.getItem('relaychat_sound') !== 'off';
 function updateSoundBtn() {
@@ -793,6 +810,148 @@ function beep(freq = 880, dur = 0.08, vol = 0.05) {
   } catch {}
 }
 
+/* ============================================================
+   POLLINATIONS AI — Geração de respostas dos bots
+   ============================================================ */
+function buildSystemPrompt(bot) {
+  let p = `Você é "${bot.name}", um personagem em um RPG interativo multiplayer. Você NUNCA deve sair do personagem. NUNCA diga que é uma IA ou um modelo de linguagem. Você é ${bot.name}, ponto final. Responda sempre em português brasileiro, na primeira pessoa, no estilo narrativo do personagem.`;
+  p += `\n\nRegras de estilo:`;
+  p += `\n- Escreva ações e descrições entre asteriscos (ex: *sorri e cruza os braços*).`;
+  p += `\n- Diálogos sem asteriscos.`;
+  p += `\n- Mantenha a coerência com o histórico da conversa e com o cenário.`;
+  p += `\n- Seja imersivo, não seja genérico. Reaja ao contexto.`;
+  if (bot.description) p += `\n\nDESCRIÇÃO CURTA:\n${bot.description}`;
+  if (bot.personality) p += `\n\nPERSONALIDADE:\n${bot.personality}`;
+  if (bot.scenario)    p += `\n\nCENÁRIO / MUNDO:\n${bot.scenario}`;
+  if (bot.examples)    p += `\n\nEXEMPLOS DE DIÁLOGO (para guiar seu estilo):\n${bot.examples}`;
+  return p;
+}
+
+function getConversationHistory(botId, userId, limit = 20) {
+  const relevant = S.messages.filter(m =>
+    !m.deleted && (
+      (m.fromId === userId && m.relayBotId === botId) ||
+      (m.type === 'bot' && m.botId === botId && m.replyToId === userId) ||
+      (m.type === 'bot' && m.botId === botId && m.spokenTo === userId && m.autoGenerated)
+    )
+  );
+  return relevant.slice(-limit);
+}
+
+async function callPollinationsAI(bot, history, userText, userName, retries = 2) {
+  const systemPrompt = buildSystemPrompt(bot);
+  const messages = [{ role: 'system', content: systemPrompt }];
+  for (const h of history) {
+    if (h.type === 'bot') {
+      messages.push({ role: 'assistant', content: String(h.text || '') });
+    } else {
+      messages.push({ role: 'user', content: `${h.fromName || 'Jogador'}: ${h.text || ''}` });
+    }
+  }
+  messages.push({ role: 'user', content: `${userName}: ${userText}` });
+
+  const model = AI_MODELS.some(m => m.value === bot.model) ? bot.model : 'openai';
+  const temperature = Math.max(0, Math.min(2, Number(bot.temperature) || 0.8));
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      console.log(`[Hermes] Chamando Pollinations (${model}) para ${bot.name}, tentativa ${attempt + 1}`);
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+      const res = await fetch('https://text.pollinations.ai/openai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model,
+          messages,
+          temperature,
+          referrer: 'projeto-hermes'
+        })
+      });
+      clearTimeout(timer);
+      if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + res.statusText);
+      const data = await res.json();
+      const content = data?.choices?.[0]?.message?.content;
+      if (!content || !content.trim()) throw new Error('Resposta vazia da IA');
+      return content.trim();
+    } catch (e) {
+      console.warn(`[Hermes] Tentativa ${attempt + 1} falhou:`, e.message);
+      if (attempt === retries) throw e;
+      await new Promise(r => setTimeout(r, 1200 * (attempt + 1)));
+    }
+  }
+}
+
+/* Teste de IA — chamado do botão "Testar" na config */
+async function testBotAI(bot, statusEl) {
+  if (statusEl) { statusEl.textContent = '⏳ testando...'; statusEl.className = 'ai-status testing'; }
+  try {
+    const reply = await callPollinationsAI(bot, [], 'Diga "olá" e se apresente brevemente.', 'Mestre', 1);
+    if (statusEl) { statusEl.textContent = '✅ ok'; statusEl.className = 'ai-status'; }
+    alert(`✅ IA do bot "${bot.name}" funcionou!\n\nResposta:\n\n${reply}`);
+  } catch (e) {
+    if (statusEl) { statusEl.textContent = '❌ falhou'; statusEl.className = 'ai-status off'; }
+    alert(`❌ Falha ao testar IA de "${bot.name}".\n\nErro: ${e.message}\n\nDicas:\n- Verifique sua conexão com internet\n- Tente novamente em alguns segundos (o Pollinations às vezes fica instável)\n- Tente outro modelo (OpenAI, Mistral, Llama...)`);
+  }
+}
+
+/* Geração assíncrona no host — chamada quando um usuário fala com um bot autoMode */
+async function hostGenerateAndReply(peerId, user, bot, userText, originalMsgId) {
+  /* Marca que o bot está pensando */
+  S._botThinking.set(bot.id, true);
+  broadcastAll({ type: 'bot-thinking', botId: bot.id, botName: bot.name, botEmoji: bot.emoji });
+  renderTypingLine();
+
+  try {
+    const history = getConversationHistory(bot.id, peerId, bot.maxHistory || 20);
+    const reply = await callPollinationsAI(bot, history, userText, user.name);
+
+    /* Cria a mensagem de resposta */
+    const botMsg = {
+      id: uuid(), type: 'bot',
+      fromName: bot.name,
+      botId: bot.id, botEmoji: bot.emoji, botColor: bot.color,
+      text: String(reply).slice(0, 4000),
+      ts: Date.now(),
+      autoGenerated: true,
+      spokenTo: peerId,
+      replyToName: user.name
+    };
+    addMessageLocal(botMsg);
+    broadcastAll({ type: 'chat', msg: botMsg });
+
+    /* Limpa o ⏳ da mensagem original */
+    if (originalMsgId) {
+      const orig = S.messages.find(m => m.id === originalMsgId);
+      if (orig) { delete orig.relayPending; persistMessage(orig); }
+    }
+    beep(1046, 0.08, 0.04);
+  } catch (err) {
+    console.error('[Hermes] Erro na IA:', err);
+    sendError(peerId, `⚠️ O bot "${bot.name}" não conseguiu responder.\nMotivo: ${err.message}\n\nTente novamente em alguns segundos.`);
+    /* Mensagem de sistema para o operador ver */
+    const sysMsg = {
+      id: uuid(), type: 'system',
+      text: `⚠️ IA de ${bot.name} falhou: ${err.message}`,
+      ts: Date.now()
+    };
+    addMessageLocal(sysMsg);
+    broadcastAll({ type: 'chat', msg: sysMsg });
+    if (originalMsgId) {
+      const orig = S.messages.find(m => m.id === originalMsgId);
+      if (orig) { delete orig.relayPending; persistMessage(orig); }
+    }
+  } finally {
+    S._botThinking.delete(bot.id);
+    broadcastAll({ type: 'bot-thinking-end', botId: bot.id });
+    renderTypingLine();
+  }
+}
+
+/* ============================================================
+   SETUP
+   ============================================================ */
 function showScreen(name) {
   $('setup').style.display = name === 'setup' ? 'flex' : 'none';
   $('app').style.display = name === 'app' ? 'grid' : 'none';
@@ -836,6 +995,9 @@ $('joinBtn').onclick = async () => {
   joinRoom(parsed.roomCode, name, { inviteToken: parsed.token });
 };
 
+/* ============================================================
+   HOST
+   ============================================================ */
 async function createRoom(name, code) {
   const peerId = 'relaychat-' + code;
   const peer = new Peer(peerId);
@@ -870,8 +1032,7 @@ function onHostNewConnection(conn) {
     const banned = deviceId ? S._bans.find(b => b.deviceId === deviceId) : null;
     if (banned) {
       conn.send({ type: 'ban-rejected', reason: banned.reason || 'Você foi banido desta sala.' });
-      setTimeout(() => conn.close(), 400);
-      return;
+      setTimeout(() => conn.close(), 400); return;
     }
 
     const resumeData = resumeToken ? S._resumeTokens.get(resumeToken) : null;
@@ -879,19 +1040,15 @@ function onHostNewConnection(conn) {
     const isInvite = !!(inviteToken && isValidInviteToken(inviteToken));
     if (!isResume && !isInvite) {
       conn.send({ type: 'auth-rejected', reason: 'Código de convite inválido. Peça um novo código a um administrador.' });
-      setTimeout(() => conn.close(), 400);
-      return;
+      setTimeout(() => conn.close(), 400); return;
     }
 
     const existing = findUserByDevice(deviceId);
     const isReconnect = !!existing;
 
-    if (!existing) {
-      if (countTotalMembers() >= MAX_FRIENDS) {
-        conn.send({ type: 'error', message: 'Sala cheia (' + MAX_FRIENDS + ' membros já registrados).' });
-        setTimeout(() => conn.close(), 400);
-        return;
-      }
+    if (!existing && countTotalMembers() >= MAX_FRIENDS) {
+      conn.send({ type: 'error', message: 'Sala cheia (' + MAX_FRIENDS + ' membros já registrados).' });
+      setTimeout(() => conn.close(), 400); return;
     }
 
     let prevMuted = false, prevRole = 'user', prevPerms = {}, prevName = '';
@@ -965,7 +1122,7 @@ function hostOnData(peerId, data) {
 
 function hostHandleChat(peerId, data) {
   const user = S.users.get(peerId); if (!user) return;
-  if (user.muted) return sendError(peerId, '🔇 Você está silenciado e não pode enviar mensagens.');
+  if (user.muted) return sendError(peerId, '🔇 Você está silenciado.');
   if (!S.settings.allowFreeChat && user.role === 'user') return;
   if (!checkRateLimit(peerId)) return;
   const text = String(data.text || '').slice(0, 4000).trim(); if (!text) return;
@@ -976,39 +1133,61 @@ function hostHandleChat(peerId, data) {
 
 function hostHandleRelayRequest(peerId, data) {
   const user = S.users.get(peerId); if (!user) return;
-  if (user.muted) return sendError(peerId, '🔇 Você está silenciado e não pode enviar pedidos.');
+  if (user.muted) return sendError(peerId, '🔇 Você está silenciado.');
   if (!checkRateLimit(peerId)) return;
   const bot = findBot(data.botId || data.bot);
   if (!bot) return sendError(peerId, 'Bot não encontrado.');
   if (!bot.online) return sendError(peerId, `O bot "${bot.name}" está offline.`);
   if (bot.adminOnly && user.role === 'user') return sendError(peerId, `O bot "${bot.name}" é só para admins.`);
-  const botPending = [...S.pending.values()].filter(r => r.botId === bot.id).length;
-  if (botPending >= bot.maxPending) return sendError(peerId, `O bot "${bot.name}" já tem ${bot.maxPending} pedidos na fila.`);
 
   const text = String(data.text || '').slice(0, 4000).trim(); if (!text) return;
+
+  /* Registra a mensagem do usuário */
   const contextCount = S.messages.filter(m =>
     (m.fromId === peerId && m.relayBotId === bot.id) ||
     (m.type === 'bot' && m.botId === bot.id && m.replyToId === peerId)
   ).length;
-
-  const relay = {
-    id: uuid(), userId: peerId, userName: user.name,
-    botId: bot.id, botName: bot.name, botEmoji: bot.emoji, botColor: bot.color,
-    text, ts: Date.now(), contextCount, userRole: user.role
-  };
-  S.pending.set(relay.id, relay);
-
+  const relayMsgId = uuid();
   const relayMsg = {
-    id: uuid(), type: 'user', fromId: peerId, fromName: user.name, text, ts: Date.now(),
-    relayPending: relay.id, relayBot: bot.name, relayBotId: bot.id,
+    id: relayMsgId, type: 'user', fromId: peerId, fromName: user.name, text, ts: Date.now(),
+    relayPending: 'pending-' + relayMsgId, relayBot: bot.name, relayBotId: bot.id,
     relayBotEmoji: bot.emoji, relayBotColor: bot.color
   };
   addMessageLocal(relayMsg);
   broadcastAll({ type: 'chat', msg: relayMsg });
-  broadcastAll({ type: 'pending-update', pending: [...S.pending.values()] });
-  persistPending(); renderPending();
   clearTyping(peerId);
-  beep(660, 0.06, 0.04);
+
+  if (bot.autoMode) {
+    /* === MODO IA AUTOMÁTICA === */
+    if (S._botThinking.get(bot.id)) {
+      sendError(peerId, `⏳ O bot "${bot.name}" ainda está pensando na resposta anterior. Aguarde um instante.`);
+      const orig = S.messages.find(m => m.id === relayMsgId);
+      if (orig) { delete orig.relayPending; persistMessage(orig); }
+      return;
+    }
+    hostGenerateAndReply(peerId, user, bot, text, relayMsgId);
+  } else {
+    /* === MODO RELAY MANUAL (fila) === */
+    const botPending = [...S.pending.values()].filter(r => r.botId === bot.id).length;
+    if (botPending >= bot.maxPending) {
+      sendError(peerId, `O bot "${bot.name}" já tem ${bot.maxPending} pedidos na fila manual.`);
+      const orig = S.messages.find(m => m.id === relayMsgId);
+      if (orig) { delete orig.relayPending; persistMessage(orig); }
+      return;
+    }
+    const relayId = uuid();
+    const relay = {
+      id: relayId, userId: peerId, userName: user.name,
+      botId: bot.id, botName: bot.name, botEmoji: bot.emoji, botColor: bot.color,
+      text, ts: Date.now(), contextCount, userRole: user.role
+    };
+    S.pending.set(relayId, relay);
+    const orig = S.messages.find(m => m.id === relayMsgId);
+    if (orig) { orig.relayPending = relayId; persistMessage(orig); }
+    broadcastAll({ type: 'pending-update', pending: [...S.pending.values()] });
+    persistPending(); renderPending();
+    beep(660, 0.06, 0.04);
+  }
 }
 
 function hostHandleSpeakAsBot(peerId, data) {
@@ -1069,6 +1248,9 @@ function hostHandleTyping(peerId) {
   broadcastAll({ type: 'typing', peerId, name: user.name }, peerId);
 }
 
+/* ============================================================
+   CLIENT
+   ============================================================ */
 function joinRoom(code, name, opts = {}) {
   const peer = new Peer();
   peer.on('open', () => {
@@ -1096,9 +1278,7 @@ function joinRoom(code, name, opts = {}) {
       if (data?.type === 'welcome') {
         gotWelcome = true;
         if (data.resumeToken) {
-          persistKV('lastRoom', {
-            code: S.code, name: S.myName, role: 'user', resumeToken: data.resumeToken
-          });
+          persistKV('lastRoom', { code: S.code, name: S.myName, role: 'user', resumeToken: data.resumeToken });
         }
         applyWelcome(data.state);
         enterRoom();
@@ -1123,7 +1303,7 @@ function joinRoom(code, name, opts = {}) {
   });
   peer.on('error', (err) => {
     if (err.type === 'peer-unavailable') {
-      if (!opts.auto) alert('Sala não encontrada. O código pode estar errado ou o host está offline.');
+      if (!opts.auto) alert('Sala não encontrada.');
     } else if (!opts.auto) {
       alert('Erro: ' + err.message);
     }
@@ -1168,21 +1348,24 @@ function userOnData(data) {
       updateSettingsInviteDisplay();
       return;
     case 'typing': return showTyping(data.peerId, data.name);
+    case 'bot-thinking':
+      S._botThinking.set(data.botId, data.botName || 'Bot');
+      renderTypingLine(); return;
+    case 'bot-thinking-end':
+      S._botThinking.delete(data.botId);
+      renderTypingLine(); return;
     case 'ban-rejected':
       alert('🚫 Você foi banido desta sala.\n\nMotivo: ' + (data.reason || '—'));
       deleteKV('lastRoom'); location.hash = '';
-      setTimeout(() => location.reload(), 200);
-      return;
+      setTimeout(() => location.reload(), 200); return;
     case 'auth-rejected':
       alert('❌ Não foi possível entrar.\n\n' + (data.reason || 'Código inválido.'));
       deleteKV('lastRoom'); location.hash = '';
-      setTimeout(() => location.reload(), 200);
-      return;
+      setTimeout(() => location.reload(), 200); return;
     case 'kick':
       alert('Você foi removido da sala.\nMotivo: ' + (data.reason || '—'));
       if (!data.temporary) deleteKV('lastRoom');
-      S.peer?.destroy();
-      return location.reload();
+      S.peer?.destroy(); return location.reload();
     case 'error': alert(data.message); return;
   }
 }
@@ -1241,7 +1424,7 @@ function addSystemMessageLocal(text) {
 function updateRelayTags() {
   const ids = new Set(S.pending.keys());
   for (const m of S.messages) {
-    if (m.relayPending && !ids.has(m.relayPending)) {
+    if (m.relayPending && !ids.has(m.relayPending) && m.relayPending !== 'pending-' + m.id) {
       delete m.relayPending;
       persistMessage(m);
     }
@@ -1249,6 +1432,9 @@ function updateRelayTags() {
   renderMessages(); renderPending();
 }
 
+/* ============================================================
+   TYPING + BOT THINKING
+   ============================================================ */
 let _myTypingSent = 0;
 function notifyTyping() {
   const now = Date.now();
@@ -1279,12 +1465,26 @@ function renderTypingLine() {
     const u = S.users.get(pid);
     if (u) names.push(u.name);
   }
-  if (!names.length) { line.textContent = ''; return; }
-  line.textContent = names.length === 1
-    ? `${names[0]} está digitando...`
-    : `${names.slice(0, 2).join(', ')}${names.length > 2 ? ' e outros' : ''} estão digitando...`;
+  let text = '';
+  if (names.length) {
+    text = names.length === 1
+      ? `${names[0]} está digitando...`
+      : `${names.slice(0, 2).join(', ')}${names.length > 2 ? ' e outros' : ''} estão digitando...`;
+  }
+  const thinkingNames = [];
+  for (const [botId, botName] of S._botThinking) {
+    thinkingNames.push(typeof botName === 'string' ? botName : (findBot(botId)?.name || 'Bot'));
+  }
+  if (thinkingNames.length) {
+    const thinkText = thinkingNames.map(n => `🤖 ${n} está pensando...`).join('  ');
+    text = text ? text + '  ·  ' + thinkText : thinkText;
+  }
+  line.innerHTML = text ? `<span class="${thinkingNames.length ? 'ai-thinking' : ''}">${escapeHtml(text)}</span>` : '';
 }
 
+/* ============================================================
+   BACKGROUND
+   ============================================================ */
 function applyBackground() {
   const el = $('messages'); if (!el) return;
   const bg = S.settings.background || '';
@@ -1315,16 +1515,15 @@ $('bgFile').onchange = async (e) => {
   const file = e.target.files?.[0];
   e.target.value = '';
   if (!file) return;
-  if (!hasPerm('manageSettings')) return alert('Sem permissão para alterar o background.');
+  if (!hasPerm('manageSettings')) return alert('Sem permissão.');
   try {
     const dataUrl = await fileToResizedDataUrl(file, 1280, 0.65);
     if (dataUrl.length > BG_MAX_BYTES) {
-      if (!confirm(`A imagem ficou com ${(dataUrl.length/1024).toFixed(0)}KB após compressão.\n\nEnviar mesmo assim? Pode demorar para novos membros entrarem.`)) return;
+      if (!confirm(`Imagem com ${(dataUrl.length/1024).toFixed(0)}KB. Enviar mesmo assim?`)) return;
     }
     saveSettings({ background: dataUrl });
   } catch (err) {
     alert('Não foi possível processar a imagem.\n\n' + (err?.message || err));
-    console.error(err);
   }
 };
 
@@ -1335,6 +1534,9 @@ $('bgClearBtn').onclick = () => {
   saveSettings({ background: '' });
 };
 
+/* ============================================================
+   CONVITE
+   ============================================================ */
 function updateInviteDisplay() {
   const display = $('roomCodeDisplay');
   const copyBtn = $('copyCodeBtn');
@@ -1380,7 +1582,7 @@ $('copyInviteCodeBtn').onclick = () => {
 };
 $('renewInviteBtn').onclick = () => {
   if (!hasPerm('shareInvite')) return;
-  if (!confirm('🔄 Renovar código de convite?\n\n• O código atual será INVALIDADO imediatamente\n• Quem já está na sala continua dentro\n• Apenas NOVOS convidados precisarão do novo código\n\nContinuar?')) return;
+  if (!confirm('🔄 Renovar código de convite?\n\n• O código atual será INVALIDADO\n• Quem está dentro continua\n• Novos precisarão do novo código')) return;
   requestAction({ name: 'renew-invite' });
 };
 function doRenewInvite() {
@@ -1392,6 +1594,9 @@ function doRenewInvite() {
   addSystemMessageHost('🔄 Código de convite renovado.');
 }
 
+/* ============================================================
+   ENTER / PERMISSIONS
+   ============================================================ */
 function enterRoom() {
   showScreen('app');
   applySettings(); renderUsers(); renderMessages(); renderPending(); applyMyPermissions();
@@ -1417,6 +1622,7 @@ function applyMyPermissions() {
 function applySettings() {
   $('roomNameDisplay').textContent = S.settings.roomName;
   $('mainTitle').textContent = S.settings.roomName;
+  document.title = S.settings.roomName + ' — Projeto Hermes';
   renderTargetSelect();
   $('setRoomName').value = S.settings.roomName;
   $('setFreeChat').checked = S.settings.allowFreeChat;
@@ -1425,6 +1631,9 @@ function applySettings() {
   updateBackgroundPreview();
 }
 
+/* ============================================================
+   RENDER USERS
+   ============================================================ */
 function renderUsers() {
   const ul = $('userList'); ul.innerHTML = '';
   const canKick = hasPerm('kickUsers');
@@ -1443,50 +1652,19 @@ function renderUsers() {
     li.className = 'user-item' + (isOffline ? ' offline' : '');
     const span = document.createElement('span'); span.className = 'user-name';
     span.textContent = u.name;
-    if (isOffline) {
-      const ob = document.createElement('span'); ob.className = 'user-offline-badge'; ob.textContent = 'offline';
-      span.appendChild(ob);
-    }
-    if (u.muted) {
-      const mb = document.createElement('span'); mb.className = 'user-muted'; mb.textContent = '🔇';
-      span.appendChild(mb);
-    }
-    if (S._typingTimers.has(u.id)) {
-      const t = document.createElement('span'); t.className = 'user-typing'; t.textContent = '✏️';
-      span.appendChild(t);
-    }
+    if (isOffline) { const ob = document.createElement('span'); ob.className = 'user-offline-badge'; ob.textContent = 'offline'; span.appendChild(ob); }
+    if (u.muted) { const mb = document.createElement('span'); mb.className = 'user-muted'; mb.textContent = '🔇'; span.appendChild(mb); }
+    if (S._typingTimers.has(u.id)) { const t = document.createElement('span'); t.className = 'user-typing'; t.textContent = '✏️'; span.appendChild(t); }
     li.appendChild(span);
-    if (u.role === 'operator') {
-      const r = document.createElement('span'); r.className = 'user-role role-op'; r.textContent = 'op';
-      li.appendChild(r);
-    } else if (u.role === 'admin') {
-      const r = document.createElement('span'); r.className = 'user-role role-admin'; r.textContent = 'adm';
-      li.appendChild(r);
-    }
+    if (u.role === 'operator') { const r = document.createElement('span'); r.className = 'user-role role-op'; r.textContent = 'op'; li.appendChild(r); }
+    else if (u.role === 'admin') { const r = document.createElement('span'); r.className = 'user-role role-admin'; r.textContent = 'adm'; li.appendChild(r); }
     const canModerateThis = u.id !== S.peer.id && u.role !== 'operator';
     if (canModerateThis) {
       const targetIsAdmin = u.role === 'admin';
       const allowedToMod = isOperator() || !targetIsAdmin;
-      if (allowedToMod && canKick) {
-        const kb = document.createElement('button');
-        kb.className = 'mod-btn kick'; kb.title = 'Expulsar'; kb.textContent = '✕';
-        kb.onclick = () => kickUser(u.id);
-        li.appendChild(kb);
-      }
-      if (allowedToMod && canBan) {
-        const bb = document.createElement('button');
-        bb.className = 'mod-btn ban'; bb.title = 'Banir'; bb.textContent = '🚫';
-        bb.onclick = () => banUser(u.id);
-        li.appendChild(bb);
-      }
-      if (allowedToMod && canMute && !isOffline) {
-        const mb = document.createElement('button');
-        mb.className = 'mod-btn mute';
-        mb.title = u.muted ? 'Dessilenciar' : 'Silenciar';
-        mb.textContent = u.muted ? '🔊' : '🔇';
-        mb.onclick = () => toggleMuteUser(u.id);
-        li.appendChild(mb);
-      }
+      if (allowedToMod && canKick) { const kb = document.createElement('button'); kb.className = 'mod-btn kick'; kb.title = 'Expulsar'; kb.textContent = '✕'; kb.onclick = () => kickUser(u.id); li.appendChild(kb); }
+      if (allowedToMod && canBan)  { const bb = document.createElement('button'); bb.className = 'mod-btn ban'; bb.title = 'Banir'; bb.textContent = '🚫'; bb.onclick = () => banUser(u.id); li.appendChild(bb); }
+      if (allowedToMod && canMute && !isOffline) { const mb = document.createElement('button'); mb.className = 'mod-btn mute'; mb.title = u.muted ? 'Dessilenciar' : 'Silenciar'; mb.textContent = u.muted ? '🔊' : '🔇'; mb.onclick = () => toggleMuteUser(u.id); li.appendChild(mb); }
     }
     ul.appendChild(li);
   }
@@ -1501,14 +1679,9 @@ function kickUser(peerId) {
 }
 function doKickUser(peerId) {
   const u = S.users.get(peerId); if (!u) return;
-  for (const [tok, data] of [...S._resumeTokens]) {
-    if (data.deviceId === u.deviceId) S._resumeTokens.delete(tok);
-  }
+  for (const [tok, data] of [...S._resumeTokens]) if (data.deviceId === u.deviceId) S._resumeTokens.delete(tok);
   const conn = S.conns.get(peerId);
-  if (conn) {
-    try { conn.send({ type: 'kick', reason: 'Removido pelo operador/admin.' }); } catch {}
-    setTimeout(() => { try { conn.close(); } catch {} }, 300);
-  }
+  if (conn) { try { conn.send({ type: 'kick', reason: 'Removido pelo operador/admin.' }); } catch {} setTimeout(() => { try { conn.close(); } catch {} }, 300); }
   S.conns.delete(peerId); S.users.delete(peerId); S._rateLimit.delete(peerId);
   clearTyping(peerId);
   persistRoom();
@@ -1526,17 +1699,12 @@ function banUser(peerId) {
 }
 function doBanUser(peerId, reason) {
   const u = S.users.get(peerId); if (!u) return;
-  if (!u.deviceId) return sendError(peerId, 'Não foi possível banir: dispositivo não identificado.');
+  if (!u.deviceId) return sendError(peerId, 'Dispositivo não identificado.');
   S._bans = S._bans.filter(b => b.deviceId !== u.deviceId);
   S._bans.push({ deviceId: u.deviceId, name: u.name, reason: reason || '', bannedAt: Date.now(), bannedBy: S.myName });
-  for (const [tok, data] of [...S._resumeTokens]) {
-    if (data.deviceId === u.deviceId) S._resumeTokens.delete(tok);
-  }
+  for (const [tok, data] of [...S._resumeTokens]) if (data.deviceId === u.deviceId) S._resumeTokens.delete(tok);
   const conn = S.conns.get(peerId);
-  if (conn) {
-    try { conn.send({ type: 'kick', reason: 'Você foi banido: ' + (reason || 'sem motivo informado') }); } catch {}
-    setTimeout(() => { try { conn.close(); } catch {} }, 300);
-  }
+  if (conn) { try { conn.send({ type: 'kick', reason: 'Você foi banido: ' + (reason || 'sem motivo') }); } catch {} setTimeout(() => { try { conn.close(); } catch {} }, 300); }
   S.conns.delete(peerId); S.users.delete(peerId); S._rateLimit.delete(peerId);
   clearTyping(peerId);
   persistRoom();
@@ -1559,9 +1727,7 @@ function toggleMuteUser(peerId) {
 function doMuteUser(peerId) {
   const u = S.users.get(peerId); if (!u || u.role === 'operator') return;
   u.muted = true;
-  for (const [tok, data] of S._resumeTokens) {
-    if (data.deviceId === u.deviceId) data.muted = true;
-  }
+  for (const [tok, data] of S._resumeTokens) if (data.deviceId === u.deviceId) data.muted = true;
   persistRoom();
   broadcastAll({ type: 'users-update', users: [...S.users.values()] });
   renderUsers();
@@ -1570,15 +1736,16 @@ function doMuteUser(peerId) {
 function doUnmuteUser(peerId) {
   const u = S.users.get(peerId); if (!u) return;
   u.muted = false;
-  for (const [tok, data] of S._resumeTokens) {
-    if (data.deviceId === u.deviceId) data.muted = false;
-  }
+  for (const [tok, data] of S._resumeTokens) if (data.deviceId === u.deviceId) data.muted = false;
   persistRoom();
   broadcastAll({ type: 'users-update', users: [...S.users.values()] });
   renderUsers();
   if ($('settingsModal').style.display !== 'none') renderSettingsModal();
 }
 
+/* ============================================================
+   RENDER MESSAGES
+   ============================================================ */
 let _searchQuery = '';
 function renderMessages() {
   const c = $('messages');
@@ -1595,7 +1762,6 @@ function renderMessages() {
     const delBtn = canDel ? `<button class="del-btn" data-id="${escapeHtml(m.id)}" title="Apagar">✕</button>` : '';
 
     if (m.type === 'system') {
-      /* system: preserva \n também (usa .msg .text com pre-wrap) */
       div.innerHTML = `<span class="text">${escapeHtml(m.text)}</span>`;
     } else if (m.type === 'bot') {
       const vis = getBotVisual(m.botId, m.botEmoji, m.botColor);
@@ -1633,6 +1799,9 @@ function doDeleteMessage(msgId) {
   broadcastAll({ type: 'delete-msg', msgId }); renderMessages();
 }
 
+/* ============================================================
+   BUSCA
+   ============================================================ */
 $('searchToggleBtn').onclick = () => {
   const s = $('searchInput');
   const showing = s.style.display !== 'none';
@@ -1645,11 +1814,14 @@ $('searchInput').addEventListener('input', () => {
   renderMessages();
 });
 
+/* ============================================================
+   RENDER PENDING
+   ============================================================ */
 function renderPending() {
   if (!hasPerm('manageRelay')) { $('pendingCount').textContent = '0'; return; }
   $('pendingCount').textContent = S.pending.size;
   const list = $('pendingList'); list.innerHTML = '';
-  if (S.pending.size === 0) { list.innerHTML = '<p class="empty">Nenhum pedido pendente.</p>'; return; }
+  if (S.pending.size === 0) { list.innerHTML = '<p class="empty">Nenhum pedido manual pendente.</p>'; return; }
   for (const relay of S.pending.values()) {
     const vis = getBotVisual(relay.botId, relay.botEmoji, relay.botColor);
     const botLabel = vis.avatar
@@ -1660,11 +1832,11 @@ function renderPending() {
     card.innerHTML = `
       <div class="pending-meta">
         <strong>${escapeHtml(relay.userName)}</strong> → <span style="color:${escapeHtml(vis.color)}; display:inline-flex; align-items:center; gap:3px">${botLabel} ${escapeHtml(relay.botName || relay.bot)}</span>
-        ${relay.contextCount ? `<div class="pending-context">Contexto: ${relay.contextCount} turno(s) anteriores nesse par user↔bot</div>` : ''}
+        ${relay.contextCount ? `<div class="pending-context">Contexto: ${relay.contextCount} turno(s) anteriores</div>` : ''}
       </div>
       <div class="pending-text">${escapeHtml(relay.text)}</div>
       <div class="pending-actions">
-        <button class="secondary copy-btn tiny">📋 Copiar mensagem</button>
+        <button class="secondary copy-btn tiny">📋 Copiar</button>
       </div>
       <textarea class="pending-response" placeholder="Cole aqui a resposta do bot..."></textarea>
       <div class="pending-actions">
@@ -1672,10 +1844,10 @@ function renderPending() {
         <button class="danger cancel-btn">✕ Cancelar</button>
       </div>`;
     const cb = card.querySelector('.copy-btn');
-    cb.onclick = () => { safeCopy(relay.text); cb.textContent = '✓ Copiado'; setTimeout(() => cb.textContent = '📋 Copiar mensagem', 1500); };
+    cb.onclick = () => { safeCopy(relay.text); cb.textContent = '✓'; setTimeout(() => cb.textContent = '📋 Copiar', 1500); };
     card.querySelector('.deliver-btn').onclick = () => {
       const t = card.querySelector('.pending-response').value.trim();
-      if (!t) return alert('Cole a resposta do bot.');
+      if (!t) return alert('Cole a resposta.');
       requestAction({ name: 'deliver-relay', relayId: relay.id, text: t });
     };
     card.querySelector('.cancel-btn').onclick = () => requestAction({ name: 'cancel-relay', relayId: relay.id });
@@ -1708,6 +1880,9 @@ function doCancelRelay(relayId) {
   persistPending(); renderPending(); renderMessages();
 }
 
+/* ============================================================
+   TARGET + SPEAK AS BOT
+   ============================================================ */
 function renderTargetSelect() {
   const sel = $('targetSelect'); const prev = sel.value;
   sel.innerHTML = '<option value="">Chat geral (livre)</option>';
@@ -1715,7 +1890,8 @@ function renderTargetSelect() {
   for (const b of online) {
     const o = document.createElement('option');
     o.value = b.id;
-    o.textContent = `${b.emoji} ${b.name}${!b.online ? ' (offline)' : ''}${b.adminOnly ? ' 🔒' : ''}`;
+    const tag = b.autoMode ? ' 🤖' : '';
+    o.textContent = `${b.emoji} ${b.name}${!b.online ? ' (offline)' : ''}${b.adminOnly ? ' 🔒' : ''}${tag}`;
     if (b.description) o.title = b.description;
     sel.appendChild(o);
   }
@@ -1728,13 +1904,8 @@ function updateSpeakAsBotVisibility() {
   const hasBot = !!$('targetSelect').value;
   const label = $('speakAsBotLabel');
   const check = $('speakAsBotCheck');
-  if (canSpeak && hasBot) {
-    label.style.display = 'flex';
-  } else {
-    label.style.display = 'none';
-    check.checked = false;
-    S._speakAsBot = false;
-  }
+  if (canSpeak && hasBot) label.style.display = 'flex';
+  else { label.style.display = 'none'; check.checked = false; S._speakAsBot = false; }
   updateInputAppearance();
 }
 function updateInputAppearance() {
@@ -1748,16 +1919,11 @@ function updateInputAppearance() {
   if (active) {
     const bot = findBot($('targetSelect').value);
     btn.textContent = `🎭 Enviar como ${bot?.name || 'bot'}`;
-  } else {
-    btn.textContent = 'Enviar';
-  }
+  } else btn.textContent = 'Enviar';
 }
 function updateInputPlaceholder() {
   const m = me();
-  if (m?.muted && m.role !== 'operator') {
-    $('messageInput').placeholder = '🔇 Você está silenciado.';
-    return;
-  }
+  if (m?.muted && m.role !== 'operator') { $('messageInput').placeholder = '🔇 Você está silenciado.'; return; }
   const targetBotId = $('targetSelect').value;
   const isRelay = !!targetBotId;
   const isSpeaking = S._speakAsBot && isRelay && isOperator();
@@ -1766,20 +1932,17 @@ function updateInputPlaceholder() {
     $('messageInput').placeholder = `Falar como ${bot?.emoji || ''} ${bot?.name || 'bot'}...`;
   } else if (isRelay) {
     const bot = findBot(targetBotId);
+    const aiTag = bot?.autoMode ? ' [IA]' : ' [fila manual]';
     $('messageInput').placeholder = bot?.greeting
-      ? `Mensagem para ${bot.emoji} ${bot.name}... (${bot.greeting})`
-      : `Mensagem para ${bot?.emoji || ''} ${bot?.name || ''}...`;
+      ? `Mensagem para ${bot.emoji} ${bot.name}${aiTag}... (${bot.greeting})`
+      : `Mensagem para ${bot?.emoji || ''} ${bot?.name || ''}${aiTag}...`;
   } else {
     $('messageInput').placeholder = 'Digite sua mensagem... (Enter envia, Shift+Enter quebra linha)';
   }
 }
 $('targetSelect').onchange = () => { updateSpeakAsBotVisibility(); updateInputPlaceholder(); };
 $('speakAsBotCheck').onchange = () => {
-  if (!isOperator()) {
-    $('speakAsBotCheck').checked = false;
-    S._speakAsBot = false;
-    return alert('Apenas o criador da sala pode falar como bot.');
-  }
+  if (!isOperator()) { $('speakAsBotCheck').checked = false; S._speakAsBot = false; return alert('Apenas o criador pode falar como bot.'); }
   S._speakAsBot = $('speakAsBotCheck').checked;
   updateInputAppearance();
   updateInputPlaceholder();
@@ -1791,12 +1954,13 @@ function renderQuickMentions() {
   c.style.display = 'flex';
   for (const b of online) {
     const chip = document.createElement('button');
-    chip.className = 'mention-chip'; chip.type = 'button';
+    chip.className = 'mention-chip' + (b.autoMode ? ' ai' : '');
+    chip.type = 'button';
     const visual = b.avatar
       ? `<img class="mention-avatar" src="${escapeHtml(b.avatar)}" alt="">`
       : `<span>${escapeHtml(b.emoji)}</span>`;
-    chip.innerHTML = `${visual} ${escapeHtml(b.name)}`;
-    chip.title = b.description || 'Falar com esse bot';
+    chip.innerHTML = `${visual} ${escapeHtml(b.name)}${b.autoMode ? ' 🤖' : ''}`;
+    chip.title = (b.description || 'Falar com esse bot') + (b.autoMode ? ' — IA automática' : ' — fila manual');
     chip.onclick = () => {
       $('targetSelect').value = b.id;
       updateSpeakAsBotVisibility();
@@ -1807,6 +1971,9 @@ function renderQuickMentions() {
   }
 }
 
+/* ============================================================
+   ENVIO
+   ============================================================ */
 $('sendBtn').onclick = sendMessage;
 $('messageInput').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
@@ -1817,15 +1984,14 @@ $('messageInput').addEventListener('input', () => {
   notifyTyping();
 });
 function sendMessage() {
-  if (me()?.muted && !isOperator()) return alert('🔇 Você está silenciado e não pode enviar mensagens.');
+  if (me()?.muted && !isOperator()) return alert('🔇 Você está silenciado.');
   const ta = $('messageInput'); const text = ta.value.trim(); if (!text) return;
   const targetBotId = $('targetSelect').value;
   const speakingAsBot = S._speakAsBot && targetBotId;
   ta.value = ''; ta.style.height = 'auto';
   if (speakingAsBot) {
-    if (!isOperator()) return alert('Apenas o criador da sala pode falar como bot.');
-    const bot = findBot(targetBotId);
-    if (!bot) return alert('Bot não encontrado.');
+    if (!isOperator()) return alert('Apenas o criador pode falar como bot.');
+    const bot = findBot(targetBotId); if (!bot) return alert('Bot não encontrado.');
     if (S.isHost) {
       const botMsg = {
         id: uuid(), type: 'bot', fromName: bot.name,
@@ -1839,35 +2005,14 @@ function sendMessage() {
       const c = S.conns.get('host'); if (!c?.open) return alert('Sem conexão.');
       c.send({ type: 'speak-as-bot', botId: targetBotId, text });
     }
-    $('messageInput').focus();
-    return;
+    $('messageInput').focus(); return;
   }
   if (S.isHost) {
     if (targetBotId) {
       const bot = findBot(targetBotId);
       if (!bot) return alert('Bot não encontrado.');
       if (!bot.online) return alert(`O bot "${bot.name}" está offline.`);
-      const botPending = [...S.pending.values()].filter(r => r.botId === bot.id).length;
-      if (botPending >= bot.maxPending) return alert(`Fila do bot cheia (${bot.maxPending}).`);
-      const contextCount = S.messages.filter(m =>
-        (m.fromId === S.peer.id && m.relayBotId === bot.id) ||
-        (m.type === 'bot' && m.botId === bot.id && m.replyToId === S.peer.id)
-      ).length;
-      const relay = {
-        id: uuid(), userId: S.peer.id, userName: S.myName,
-        botId: bot.id, botName: bot.name, botEmoji: bot.emoji, botColor: bot.color,
-        text, ts: Date.now(), contextCount, userRole: 'operator'
-      };
-      S.pending.set(relay.id, relay);
-      const relayMsg = {
-        id: uuid(), type: 'user', fromId: S.peer.id, fromName: S.myName,
-        text, ts: Date.now(), relayPending: relay.id,
-        relayBot: bot.name, relayBotId: bot.id, relayBotEmoji: bot.emoji, relayBotColor: bot.color
-      };
-      addMessageLocal(relayMsg);
-      broadcastAll({ type: 'chat', msg: relayMsg });
-      broadcastAll({ type: 'pending-update', pending: [...S.pending.values()] });
-      persistPending(); renderPending();
+      hostHandleRelayRequest(S.peer.id, { botId: targetBotId, text });
     } else {
       const msg = { id: uuid(), type: 'user', fromId: S.peer.id, fromName: S.myName, text, ts: Date.now() };
       addMessageLocal(msg); broadcastAll({ type: 'chat', msg });
@@ -1880,6 +2025,9 @@ function sendMessage() {
   $('messageInput').focus();
 }
 
+/* ============================================================
+   SETTINGS MODAL
+   ============================================================ */
 document.querySelectorAll('.stab').forEach(st => {
   st.onclick = () => {
     if (st.disabled) return;
@@ -1912,10 +2060,10 @@ function renderSettingsModal() {
   tabs.forEach(t => {
     switch (t.dataset.stab) {
       case 'general': t.disabled = !hasPerm('manageSettings'); break;
-      case 'invite': t.disabled = !hasPerm('shareInvite'); break;
-      case 'bots': t.disabled = !hasPerm('manageBots'); break;
-      case 'users': t.disabled = !isOperator(); break;
-      case 'bans': t.disabled = !hasPerm('banUsers'); break;
+      case 'invite':  t.disabled = !hasPerm('shareInvite'); break;
+      case 'bots':    t.disabled = !hasPerm('manageBots'); break;
+      case 'users':   t.disabled = !isOperator(); break;
+      case 'bans':    t.disabled = !hasPerm('banUsers'); break;
       case 'history': t.disabled = !hasPerm('manageHistory'); break;
     }
   });
@@ -1950,38 +2098,75 @@ function renderBotsList() {
       ? `<img src="${escapeHtml(bot.avatar)}" alt="">`
       : `<span>${escapeHtml(bot.emoji)}</span>`;
 
+    const modelOptions = AI_MODELS.map(m =>
+      `<option value="${m.value}" ${bot.model === m.value ? 'selected' : ''}>${m.label}</option>`
+    ).join('');
+
     row.innerHTML = `
       <div class="bot-config-header">
         <label class="bot-avatar-picker ${editable ? '' : 'disabled'}" title="${editable ? 'Clique para enviar imagem' : 'Avatar'}">
           ${editable ? '<input type="file" class="bot-avatar-file" accept="image/*" style="display:none">' : ''}
           ${avatarContent}
         </label>
-        <input type="text" class="bot-emoji-input" value="${escapeHtml(bot.emoji)}" maxlength="3" title="Emoji (fallback quando não houver imagem)" style="width:50px; text-align:center; flex:0 0 50px" ${editable ? '' : 'disabled'}>
+        <input type="text" class="bot-emoji-input" value="${escapeHtml(bot.emoji)}" maxlength="3" title="Emoji (fallback)" style="width:50px; text-align:center; flex:0 0 50px" ${editable ? '' : 'disabled'}>
         <input type="text" class="bot-name-input" value="${escapeHtml(bot.name)}" maxlength="40" ${editable ? '' : 'disabled'}>
-        <input type="color" class="bot-color-input" value="${escapeHtml(bot.color)}" style="width:40px; flex:0 0 40px" title="Cor do destaque" ${editable ? '' : 'disabled'}>
+        <input type="color" class="bot-color-input" value="${escapeHtml(bot.color)}" style="width:40px; flex:0 0 40px" title="Cor" ${editable ? '' : 'disabled'}>
+        <span class="ai-status ${bot.autoMode ? '' : 'off'}" id="aiStatus-${bot.id}">${bot.autoMode ? '🤖 IA' : 'manual'}</span>
         ${editable ? '<button class="icon-btn remove-bot" title="Remover bot">🗑️</button>' : ''}
       </div>
+
+      <div class="ai-toggle-row ${bot.autoMode ? '' : 'off'}">
+        <input type="checkbox" class="bot-automode-input" id="autoMode-${bot.id}" ${bot.autoMode ? 'checked' : ''} ${editable ? '' : 'disabled'}>
+        <label for="autoMode-${bot.id}" style="margin:0; cursor:pointer; font-weight:600">🤖 IA Automática</label>
+        <span style="margin-left:auto; font-size:11px; opacity:0.7">${bot.autoMode ? 'Pollinations AI responde sozinho' : 'Fila manual (você responde)'}</span>
+      </div>
+
       <div class="bot-config-grid">
         <div class="full">
-          <label>Descrição (mostrada aos jogadores)</label>
+          <label>Descrição curta (mostrada nos chips e dropdown)</label>
           <input type="text" class="bot-desc-input" value="${escapeHtml(bot.description || '')}" maxlength="120" ${editable ? '' : 'disabled'}>
         </div>
         <div class="full">
-          <label>Greeting / dica de personalidade (opcional)</label>
+          <label>💭 Personalidade (quem ele é, como fala, manias)</label>
+          <textarea class="bot-personality-input" rows="4" placeholder="Ex: Sou uma elfa arqueira de 300 anos. Falo de forma direta e um pouco sarcástica. Odeio magia e confio mais em flechas. Tenho cicatriz no olho esquerdo..." ${editable ? '' : 'disabled'}>${escapeHtml(bot.personality || '')}</textarea>
+        </div>
+        <div class="full">
+          <label>🌍 Cenário / Mundo (onde a história acontece)</label>
+          <textarea class="bot-scenario-input" rows="3" placeholder="Ex: Floresta de Eldoria, anoitecer. O grupo está fugindo de caçadores. Você conhece cada árvore do local..." ${editable ? '' : 'disabled'}>${escapeHtml(bot.scenario || '')}</textarea>
+        </div>
+        <div class="full">
+          <label>💬 Exemplos de diálogo (opcional, mas ajuda muito)</label>
+          <textarea class="bot-examples-input" rows="3" placeholder="Ex:&#10;Jogador: Me ajuda?&#10;Bot: *encosta na árvore* Depende do que você oferece em troca.&#10;Jogador: Tenho moedas.&#10;Bot: *ri* Moedas não compram flechas mágicas, forasteiro." ${editable ? '' : 'disabled'}>${escapeHtml(bot.examples || '')}</textarea>
+        </div>
+        <div class="full">
+          <label>Greeting / dica inicial (opcional, mostrado no placeholder)</label>
           <input type="text" class="bot-greet-input" value="${escapeHtml(bot.greeting || '')}" maxlength="200" ${editable ? '' : 'disabled'}>
         </div>
         <div>
-          <label>Máx. pedidos na fila</label>
+          <label>Modelo de IA</label>
+          <select class="bot-model-input" ${editable ? '' : 'disabled'}>${modelOptions}</select>
+        </div>
+        <div>
+          <label>Temperatura (criatividade: ${bot.temperature})</label>
+          <input type="range" class="bot-temp-input" min="0" max="1.5" step="0.1" value="${bot.temperature}" ${editable ? '' : 'disabled'}>
+        </div>
+        <div>
+          <label>Máx. histórico (mensagens de contexto)</label>
+          <input type="number" class="bot-maxhistory-input" value="${bot.maxHistory || 20}" min="4" max="40" ${editable ? '' : 'disabled'}>
+        </div>
+        <div>
+          <label>Máx. pedidos na fila manual</label>
           <input type="number" class="bot-maxpending-input" value="${bot.maxPending}" min="1" max="20" ${editable ? '' : 'disabled'}>
         </div>
-        <div style="justify-content:flex-end">
-          <label>&nbsp;</label>
-          <label><input type="checkbox" class="bot-online-input" ${bot.online ? 'checked' : ''} ${editable ? '' : 'disabled'}> Online</label>
-          <label><input type="checkbox" class="bot-adminonly-input" ${bot.adminOnly ? 'checked' : ''} ${editable ? '' : 'disabled'}> Só admins</label>
+        <div style="grid-column: 1 / -1; flex-direction: row; gap: 12px; margin-top: 4px">
+          <label style="margin:0;display:flex;align-items:center;gap:4px"><input type="checkbox" class="bot-online-input" ${bot.online ? 'checked' : ''} ${editable ? '' : 'disabled'}> Online</label>
+          <label style="margin:0;display:flex;align-items:center;gap:4px"><input type="checkbox" class="bot-adminonly-input" ${bot.adminOnly ? 'checked' : ''} ${editable ? '' : 'disabled'}> Só admins</label>
         </div>
       </div>
+
       <div class="bot-config-footer">
-        <button class="secondary speak-btn tiny">🎭 Falar como este bot</button>
+        <button class="secondary test-ai-btn tiny" title="Testa a API com a personalidade atual">⚡ Testar IA</button>
+        <button class="secondary speak-btn tiny">🎭 Falar como bot</button>
         ${editable && bot.avatar ? '<button class="secondary remove-avatar tiny">🗑️ Remover avatar</button>' : ''}
       </div>`;
 
@@ -1990,15 +2175,33 @@ function renderBotsList() {
       row.querySelector('.bot-emoji-input').onchange = (e) => updateBot(bot.id, { emoji: e.target.value.trim() || '🤖' });
       row.querySelector('.bot-color-input').onchange = (e) => updateBot(bot.id, { color: e.target.value });
       row.querySelector('.bot-desc-input').onchange = (e) => updateBot(bot.id, { description: e.target.value.trim().slice(0, 120) });
+      row.querySelector('.bot-personality-input').onchange = (e) => updateBot(bot.id, { personality: e.target.value.slice(0, 2000) });
+      row.querySelector('.bot-scenario-input').onchange = (e) => updateBot(bot.id, { scenario: e.target.value.slice(0, 2000) });
+      row.querySelector('.bot-examples-input').onchange = (e) => updateBot(bot.id, { examples: e.target.value.slice(0, 3000) });
       row.querySelector('.bot-greet-input').onchange = (e) => updateBot(bot.id, { greeting: e.target.value.trim().slice(0, 200) });
+      row.querySelector('.bot-model-input').onchange = (e) => updateBot(bot.id, { model: e.target.value });
+      row.querySelector('.bot-temp-input').oninput = (e) => {
+        const lbl = e.target.previousElementSibling;
+        lbl.textContent = `Temperatura (criatividade: ${e.target.value})`;
+      };
+      row.querySelector('.bot-temp-input').onchange = (e) => updateBot(bot.id, { temperature: Number(e.target.value) });
+      row.querySelector('.bot-maxhistory-input').onchange = (e) => updateBot(bot.id, { maxHistory: Math.max(4, Math.min(40, parseInt(e.target.value) || 20)) });
       row.querySelector('.bot-maxpending-input').onchange = (e) => updateBot(bot.id, { maxPending: Math.max(1, Math.min(20, parseInt(e.target.value) || 3)) });
       row.querySelector('.bot-online-input').onchange = (e) => updateBot(bot.id, { online: e.target.checked });
       row.querySelector('.bot-adminonly-input').onchange = (e) => updateBot(bot.id, { adminOnly: e.target.checked });
+      row.querySelector('.bot-automode-input').onchange = (e) => {
+        const enabled = e.target.checked;
+        if (enabled && !bot.personality && !bot.scenario) {
+          if (!confirm(`O bot "${bot.name}" ainda não tem personalidade nem cenário configurados.\n\nA IA vai responder de forma genérica. Quer continuar?`)) {
+            e.target.checked = false; return;
+          }
+        }
+        updateBot(bot.id, { autoMode: enabled });
+      };
       row.querySelector('.remove-bot').onclick = () => {
         if (!confirm(`Remover o bot "${bot.name}"?`)) return;
         saveSettings({ bots: S.settings.bots.filter(b => b.id !== bot.id) });
       };
-
       const avatarFile = row.querySelector('.bot-avatar-file');
       if (avatarFile) {
         avatarFile.onchange = async (e) => {
@@ -2007,24 +2210,31 @@ function renderBotsList() {
           if (!file) return;
           try {
             const dataUrl = await fileToResizedDataUrl(file, 128, 0.8);
-            if (dataUrl.length > AVATAR_MAX_BYTES) {
-              return alert(`A imagem ficou com ${(dataUrl.length/1024).toFixed(0)}KB após compressão.\n\nMáximo: ${(AVATAR_MAX_BYTES/1024).toFixed(0)}KB.`);
-            }
+            if (dataUrl.length > AVATAR_MAX_BYTES) return alert(`Muito grande: ${(dataUrl.length/1024).toFixed(0)}KB. Máx ${(AVATAR_MAX_BYTES/1024).toFixed(0)}KB.`);
             updateBot(bot.id, { avatar: dataUrl });
-          } catch (err) {
-            alert('Não foi possível processar a imagem.\n\n' + (err?.message || err));
-            console.error(err);
-          }
+          } catch (err) { alert('Erro: ' + (err?.message || err)); }
         };
       }
       const removeAvatarBtn = row.querySelector('.remove-avatar');
       if (removeAvatarBtn) {
         removeAvatarBtn.onclick = () => {
-          if (!confirm(`Remover o avatar de "${bot.name}"? (o emoji volta a ser usado)`)) return;
+          if (!confirm(`Remover avatar de "${bot.name}"?`)) return;
           updateBot(bot.id, { avatar: '' });
         };
       }
     }
+
+    /* Testar IA — só faz sentido se o modelo estiver preenchido (sempre está) */
+    row.querySelector('.test-ai-btn').onclick = async () => {
+      const statusEl = document.getElementById('aiStatus-' + bot.id);
+      await testBotAI(bot, statusEl);
+      /* Atualiza o status visual depois do teste */
+      const curBot = findBot(bot.id);
+      if (statusEl && curBot) {
+        statusEl.textContent = curBot.autoMode ? '🤖 IA' : 'manual';
+        statusEl.className = 'ai-status ' + (curBot.autoMode ? '' : 'off');
+      }
+    };
 
     const speakBtn = row.querySelector('.speak-btn');
     if (canSpeakAsBot) {
@@ -2037,6 +2247,7 @@ function renderBotsList() {
         $('messageInput').focus();
       };
     } else speakBtn.style.display = 'none';
+
     c.appendChild(row);
   }
   $('newBotName').style.display = editable ? 'block' : 'none';
@@ -2064,13 +2275,10 @@ function renderBansList() {
         <span class="ban-name">${escapeHtml(ban.name || 'Desconhecido')}</span>
         <span class="ban-tag">BANIDO</span>
       </div>
-      <div class="ban-meta">
-        Motivo: ${escapeHtml(ban.reason || 'não informado')}<br>
-        Por <b>${escapeHtml(ban.bannedBy || '—')}</b> em ${escapeHtml(date)}
-      </div>
+      <div class="ban-meta">Motivo: ${escapeHtml(ban.reason || 'não informado')}<br>Por <b>${escapeHtml(ban.bannedBy || '—')}</b> em ${escapeHtml(date)}</div>
       <button class="secondary unban-btn">Desbanir</button>`;
     row.querySelector('.unban-btn').onclick = () => {
-      if (!confirm(`Desbanir ${ban.name}?\n\nEle poderá entrar novamente (com novo código).`)) return;
+      if (!confirm(`Desbanir ${ban.name}?`)) return;
       unbanUser(ban.deviceId);
     };
     c.appendChild(row);
@@ -2092,7 +2300,7 @@ function renderAdminUsersList() {
           <span class="user-role role-admin">ADMIN</span>
         </div>
         <div class="admin-perms"></div>
-        <button class="danger demote-btn">Rebaixar a usuário</button>`;
+        <button class="danger demote-btn">Rebaixar</button>`;
       const permsBox = row.querySelector('.admin-perms');
       for (const [k, label] of Object.entries(PERMS)) {
         const lab = document.createElement('label');
@@ -2107,7 +2315,7 @@ function renderAdminUsersList() {
         permsBox.appendChild(lab);
       }
       row.querySelector('.demote-btn').onclick = () => {
-        if (!confirm(`Rebaixar ${u.name} a usuário comum?`)) return;
+        if (!confirm(`Rebaixar ${u.name}?`)) return;
         requestAction({ name: 'demote', targetId: u.id });
       };
     } else {
@@ -2117,8 +2325,7 @@ function renderAdminUsersList() {
           ${isOffline ? '<span class="offline-tag">offline</span>' : ''}
         </div>
         <button class="primary promote-btn">Promover a admin</button>`;
-      row.querySelector('.promote-btn').onclick = () =>
-        requestAction({ name: 'promote', targetId: u.id, perms: {} });
+      row.querySelector('.promote-btn').onclick = () => requestAction({ name: 'promote', targetId: u.id, perms: {} });
     }
     c.appendChild(row);
   }
@@ -2128,9 +2335,7 @@ function doPromote(targetId, perms) {
   const u = S.users.get(targetId); if (!u || u.role === 'operator') return;
   u.role = 'admin'; u.perms = { ...(perms || {}) };
   S._adminNames.set(u.name.toLowerCase(), u.perms);
-  for (const [tok, data] of S._resumeTokens) {
-    if (data.deviceId === u.deviceId) { data.role = 'admin'; data.perms = u.perms; }
-  }
+  for (const [tok, data] of S._resumeTokens) if (data.deviceId === u.deviceId) { data.role = 'admin'; data.perms = u.perms; }
   persistRoom();
   broadcastAll({ type: 'users-update', users: [...S.users.values()] });
   broadcastInviteToken();
@@ -2140,15 +2345,13 @@ function doDemote(targetId) {
   const u = S.users.get(targetId); if (!u || u.role === 'operator') return;
   S._adminNames.delete(u.name.toLowerCase());
   u.role = 'user'; u.perms = {};
-  for (const [tok, data] of S._resumeTokens) {
-    if (data.deviceId === u.deviceId) { data.role = 'user'; data.perms = {}; }
-  }
+  for (const [tok, data] of S._resumeTokens) if (data.deviceId === u.deviceId) { data.role = 'user'; data.perms = {}; }
   persistRoom();
   broadcastAll({ type: 'users-update', users: [...S.users.values()] });
   renderUsers(); renderSettingsModal();
 }
 
-$('setRoomName').onchange = () => saveSettings({ roomName: $('setRoomName').value.trim().slice(0, 40) || 'Relay Chat' });
+$('setRoomName').onchange = () => saveSettings({ roomName: $('setRoomName').value.trim().slice(0, 40) || 'Projeto Hermes' });
 $('setFreeChat').onchange = () => saveSettings({ allowFreeChat: $('setFreeChat').checked });
 function saveSettings(partial) { requestAction({ name: 'update-settings', partial }); }
 function doUpdateSettings(partial) {
@@ -2163,7 +2366,7 @@ function doUpdateSettings(partial) {
 $('exportBtn').onclick = () => {
   if (!hasPerm('manageHistory')) return;
   const data = { code: S.code, settings: S.settings, messages: S.messages, exportedAt: new Date().toISOString() };
-  downloadJSON(data, `relaychat-${S.code}-${new Date().toISOString().slice(0,10)}.json`);
+  downloadJSON(data, `hermes-${S.code}-${new Date().toISOString().slice(0,10)}.json`);
 };
 $('exportFullBtn').onclick = async () => {
   if (!hasPerm('manageHistory')) return;
@@ -2171,7 +2374,7 @@ $('exportFullBtn').onclick = async () => {
   const allMessages = await idbGetAllByIndex('messages', 'roomCode', S.code);
   const allPending = await idbGetAllByIndex('pending', 'roomCode', S.code);
   downloadJSON({ room: roomRecord, messages: allMessages, pending: allPending, exportedAt: new Date().toISOString() },
-    `relaychat-full-${S.code}-${new Date().toISOString().slice(0,10)}.json`);
+    `hermes-full-${S.code}-${new Date().toISOString().slice(0,10)}.json`);
 };
 function downloadJSON(data, filename) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -2193,7 +2396,7 @@ async function doClearHistory() {
 }
 $('deleteRoomBtn').onclick = async () => {
   if (!isOperator()) return;
-  if (!confirm('EXCLUIR a sala ' + S.code + ' permanentemente?\n\nOs participantes serão desconectados.\nNão pode ser desfeito.')) return;
+  if (!confirm('EXCLUIR a sala ' + S.code + ' permanentemente?')) return;
   await idbClearByRoom('messages', S.code);
   await idbClearByRoom('pending', S.code);
   await idbDelete('rooms', S.code);
@@ -2202,6 +2405,9 @@ $('deleteRoomBtn').onclick = async () => {
   S.peer?.destroy(); setTimeout(() => location.reload(), 200);
 };
 
+/* ============================================================
+   DISPATCHER
+   ============================================================ */
 function requestAction(action) {
   if (S.isHost) return executeHostAction(S.peer.id, action);
   const conn = S.conns.get('host');
@@ -2214,34 +2420,18 @@ function executeHostAction(requesterId, action) {
   const ok = (p) => isOp || (req.role === 'admin' && !!req.perms?.[p]);
   switch (action.name) {
     case 'kick':
-      if (!ok('kickUsers')) return;
-      if (action.targetId === requesterId) return;
-      { const t = S.users.get(action.targetId);
-        if (!t || t.role === 'operator') return;
-        if (t.role === 'admin' && !isOp) return;
-        doKickUser(action.targetId); }
-      break;
+      if (!ok('kickUsers') || action.targetId === requesterId) return;
+      { const t = S.users.get(action.targetId); if (!t || t.role === 'operator' || (t.role === 'admin' && !isOp)) return; doKickUser(action.targetId); } break;
     case 'ban':
-      if (!ok('banUsers')) return;
-      if (action.targetId === requesterId) return;
-      { const t = S.users.get(action.targetId);
-        if (!t || t.role === 'operator') return;
-        if (t.role === 'admin' && !isOp) return;
-        doBanUser(action.targetId, action.reason); }
-      break;
+      if (!ok('banUsers') || action.targetId === requesterId) return;
+      { const t = S.users.get(action.targetId); if (!t || t.role === 'operator' || (t.role === 'admin' && !isOp)) return; doBanUser(action.targetId, action.reason); } break;
     case 'unban': if (!ok('banUsers')) return; doUnban(action.deviceId); break;
     case 'mute':
       if (!ok('muteUsers')) return;
-      { const t = S.users.get(action.targetId);
-        if (!t || t.role === 'operator') return;
-        if (t.role === 'admin' && !isOp) return;
-        doMuteUser(action.targetId); }
-      break;
+      { const t = S.users.get(action.targetId); if (!t || t.role === 'operator' || (t.role === 'admin' && !isOp)) return; doMuteUser(action.targetId); } break;
     case 'unmute': if (!ok('muteUsers')) return; doUnmuteUser(action.targetId); break;
     case 'delete-msg': if (!ok('deleteMessages')) return; doDeleteMessage(action.msgId); break;
-    case 'update-settings':
-      if (!ok('manageSettings') && !ok('manageBots')) return;
-      doUpdateSettings(action.partial); break;
+    case 'update-settings': if (!ok('manageSettings') && !ok('manageBots')) return; doUpdateSettings(action.partial); break;
     case 'deliver-relay': if (!ok('manageRelay')) return; doDeliverRelay(action.relayId, action.text); break;
     case 'cancel-relay': if (!ok('manageRelay')) return; doCancelRelay(action.relayId); break;
     case 'clear-history': if (!ok('manageHistory')) return; doClearHistory(); break;
@@ -2268,6 +2458,9 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') $('settingsModal').style.display = 'none';
 });
 
+/* ============================================================
+   RETOMADA
+   ============================================================ */
 async function initResume() {
   try { await getDB(); } catch { return; }
   const saved = await getKV('lastRoom'); if (!saved?.code) return;
@@ -2292,31 +2485,17 @@ async function initResume() {
         S.settings = roomRecord.settings || S.settings;
         S._createdAt = roomRecord.createdAt;
         S._inviteToken = roomRecord.inviteToken || genInviteToken();
-        if (Array.isArray(roomRecord.admins)) {
-          for (const a of roomRecord.admins) {
-            if (a?.name) S._adminNames.set(a.name.toLowerCase(), a.perms || {});
-          }
-        }
+        if (Array.isArray(roomRecord.admins)) for (const a of roomRecord.admins) if (a?.name) S._adminNames.set(a.name.toLowerCase(), a.perms || {});
         if (Array.isArray(roomRecord.bans)) S._bans = roomRecord.bans.filter(b => b && b.deviceId);
-        if (Array.isArray(roomRecord.resumeTokens)) {
-          for (const t of roomRecord.resumeTokens) {
-            if (t?.token && t.deviceId) {
-              S._resumeTokens.set(t.token, {
-                deviceId: t.deviceId, name: t.name, role: t.role || 'user',
-                perms: t.perms || {}, muted: !!t.muted
-              });
-            }
-          }
-        }
-        if (Array.isArray(roomRecord.members)) {
-          for (const m of roomRecord.members) {
-            if (m?.deviceId && m.role !== 'operator') {
-              const pid = m.id || ('offline-' + m.deviceId);
-              S.users.set(pid, { ...m, online: false });
-            }
-          }
-        }
+        if (Array.isArray(roomRecord.resumeTokens)) for (const t of roomRecord.resumeTokens) if (t?.token && t.deviceId) S._resumeTokens.set(t.token, { deviceId: t.deviceId, name: t.name, role: t.role || 'user', perms: t.perms || {}, muted: !!t.muted });
+        if (Array.isArray(roomRecord.members)) for (const m of roomRecord.members) if (m?.deviceId && m.role !== 'operator') { const pid = m.id || ('offline-' + m.deviceId); S.users.set(pid, { ...m, online: false }); }
         S.users.set(peer.id, { id: peer.id, name: S.myName, role: 'operator', perms: {}, deviceId: getDeviceId(), muted: false, online: true });
+
+        /* Garante campos de IA em bots antigos */
+        S.settings.bots = (S.settings.bots || []).map(b => ({
+          ...makeBot(b.name || 'Bot'),
+          ...b
+        }));
 
         const stored = await idbGetAllByIndex('messages', 'roomCode', saved.code);
         stored.sort((a, b) => a.ts - b.ts);
@@ -2331,16 +2510,11 @@ async function initResume() {
       });
       peer.on('error', (err) => {
         $('resumeBtn').disabled = false; $('resumeBtn').textContent = 'Retomar';
-        if (err.type === 'unavailable-id') alert('Código ' + saved.code + ' em uso (outra aba?).');
+        if (err.type === 'unavailable-id') alert('Código ' + saved.code + ' em uso.');
         else alert('Erro: ' + err.message);
       });
     } else {
-      if (!saved.resumeToken) {
-        alert('Sessão anterior não tem token de retomada.\n\nVocê precisa de um novo código de convite.');
-        await deleteKV('lastRoom');
-        location.reload();
-        return;
-      }
+      if (!saved.resumeToken) { alert('Sessão sem token de retomada.'); await deleteKV('lastRoom'); location.reload(); return; }
       joinRoom(saved.code, saved.name || 'Anônimo', { resumeToken: saved.resumeToken });
     }
   };
@@ -2350,12 +2524,7 @@ async function initResume() {
 
   if (saved.role !== 'operator' && saved.resumeToken) {
     $('autoHint').style.display = 'block';
-    setTimeout(() => {
-      joinRoom(saved.code, saved.name || 'Anônimo', {
-        resumeToken: saved.resumeToken,
-        auto: true
-      });
-    }, 500);
+    setTimeout(() => joinRoom(saved.code, saved.name || 'Anônimo', { resumeToken: saved.resumeToken, auto: true }), 500);
   }
 }
 
