@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<!-- BUILD: v16 — Projeto Hermes + troca de nick livre -->
+<!-- BUILD: v17 — Projeto Hermes + consciência multiplayer + interação bot-to-bot -->
 <title>Projeto Hermes</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -77,7 +77,6 @@
   .mod-btn.mute { color: #f59e0b; }
   .mod-btn.rename { color: #5865f2; }
   .mod-btn:hover { color: #fff; background: #3a3a3f; }
-  /* Rename button sempre visível na própria linha */
   .user-item .mod-btn.rename.always { visibility: visible; }
   .sidebar-footer { padding: 12px 16px; border-top: 1px solid #2a2a2e; display: flex; flex-direction: column; gap: 6px; }
   .sidebar-footer button { text-align: left; }
@@ -97,6 +96,7 @@
   .msg { padding: 8px 12px; border-radius: 8px; max-width: 75%; line-height: 1.5; position: relative; word-wrap: break-word; }
   .msg.user { background: #232328; align-self: flex-start; }
   .msg.bot { align-self: flex-start; background: #1e2d4a; }
+  .msg.bot.bot-to-bot { background: #2a1e3d; border-left: 3px solid #a855f7; }
   .msg.system { align-self: center; background: rgba(15,15,16,0.7); color: #aaa; font-style: italic; font-size: 12px; padding: 3px 10px; border-radius: 10px; }
   .msg.system.warn { background: rgba(58, 26, 26, 0.9); color: #fca5a5; border: 1px solid #7f1d1d; }
   .msg .name { font-weight: 600; color: #8eb4ff; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; }
@@ -104,6 +104,7 @@
   .msg .time { font-size: 10px; color: #666; margin-left: 6px; }
   .msg .text { margin-top: 2px; white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; unicode-bidi: plaintext; }
   .msg .pending-tag { color: #f59e0b; font-size: 12px; margin-left: 6px; }
+  .msg .bot-to-bot-tag { font-size: 10px; color: #c084fc; margin-left: 6px; opacity: 0.8; }
   .msg .del-btn { position: absolute; top: 4px; right: 4px; background: #1a1a1d; border: none; color: #999; width: 20px; height: 20px; border-radius: 4px; visibility: hidden; font-size: 12px; }
   .msg:hover .del-btn { visibility: visible; }
   .msg .del-btn:hover { color: #ef4444; }
@@ -202,9 +203,14 @@
   .ai-toggle-row input[type=checkbox] { width: auto; margin: 0; cursor: pointer; }
   .ai-toggle-row.off { background: #1c1c1f; border-color: #2a2a2e; color: #888; }
 
+  .bot-to-bot-toggle-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin: 6px 0; background: #2a1e3d; border: 1px solid #4c1d95; border-radius: 6px; font-size: 12px; color: #c084fc; }
+  .bot-to-bot-toggle-row input[type=checkbox] { width: auto; margin: 0; cursor: pointer; }
+  .bot-to-bot-toggle-row.off { background: #1c1c1f; border-color: #2a2a2e; color: #888; }
+
   .ai-status { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 4px; background: #16a34a; color: white; font-weight: 600; margin-left: 4px; }
   .ai-status.off { background: #555; }
   .ai-status.testing { background: #f59e0b; animation: pulse 1s infinite; }
+  .ai-status.reactive { background: #a855f7; }
   @keyframes pulse { 50% { opacity: 0.5; } }
 
   .ai-test-result { display: none; margin-top: 8px; padding: 8px 10px; background: #0f1f33; border: 1px solid #2a4a6f; border-radius: 6px; font-size: 12px; line-height: 1.5; color: #b8c8dd; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto; }
@@ -236,6 +242,7 @@
   .mention-chip { background: #2a2a2e; border: 1px solid #3a3a3f; color: #8eb4ff; padding: 3px 8px; border-radius: 10px; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
   .mention-chip:hover { background: #3a3a3f; }
   .mention-chip.ai { border-color: #16a34a; color: #a7d4a0; }
+  .mention-chip.reactive { border-color: #a855f7; color: #c084fc; }
   .mention-avatar { width: 12px; height: 12px; border-radius: 50%; object-fit: cover; background: #141415; }
 
   .help-box { background: #0f1f33; border: 1px solid #2a4a6f; border-radius: 6px; padding: 10px 12px; margin: 10px 0; font-size: 12px; line-height: 1.6; color: #b8c8dd; }
@@ -267,17 +274,7 @@
   .rename-card { max-width: 380px; }
   .rename-card h2 { margin: 0 0 6px; }
   .rename-card p { color: #888; font-size: 12px; line-height: 1.5; margin: 0 0 14px; }
-  .rename-card .current-name {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    background: #141415;
-    border-radius: 6px;
-    font-size: 12px;
-    color: #aaa;
-    margin-bottom: 14px;
-  }
+  .rename-card .current-name { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: #141415; border-radius: 6px; font-size: 12px; color: #aaa; margin-bottom: 14px; }
   .rename-card .current-name strong { color: #8eb4ff; }
 
   @media (max-width: 900px) {
@@ -430,7 +427,10 @@
       <button id="renewInviteBtn" class="primary" style="width:100%; margin-top:12px">🔄 Renovar código de convite</button>
     </div>
     <div id="stab-bots" class="stab-content" style="display:none">
-      <div class="help-box">💡 Os campos de personalidade/cenário/exemplos têm auto-resize e contador. Clique no avatar para enquadrar imagem.</div>
+      <div class="help-box">
+        💡 <b>Consciência da cena:</b> cada bot vê TODAS as mensagens recentes (de todos os jogadores e outros bots), sabe quem está na cena, e mantém coerência multiplayer.<br>
+        <b>🤝 Reagir a outros bots:</b> quando ativado, o bot pode comentar espontaneamente o que outros bots disseram (com cooldown de 60s, sem criar loops).
+      </div>
       <div id="botsList"></div>
       <div class="add-bot-row">
         <input id="newBotName" placeholder="Nome do novo bot" maxlength="40">
@@ -494,7 +494,7 @@
 
 <script>
 /* ============================================================
-   PROJETO HERMES v16 — troca de nick
+   PROJETO HERMES v17 — consciência multiplayer + bot-to-bot
    ============================================================ */
 
 const $ = (id) => document.getElementById(id);
@@ -590,9 +590,11 @@ const RATE_LIMIT_MS = 800;
 const TYPING_TIMEOUT_MS = 2500;
 const BG_MAX_BYTES = 500000;
 const AI_TIMEOUT_MS = 60000;
-/* NOVO: cooldown de renomeação */
 const RENAME_COOLDOWN_MS = 30000;
 const MAX_NAME_LEN = 40;
+/* NOVO: cooldown e chance para reação bot-to-bot */
+const BOT_REACT_COOLDOWN_MS = 60000;
+const BOT_REACT_CHANCE = 0.4;
 
 const PERMS = {
   kickUsers: 'Expulsar usuários', banUsers: 'Banir/desbanir', muteUsers: 'Silenciar',
@@ -617,7 +619,8 @@ function makeBot(name = 'Novo Bot', opts = {}) {
     description: '', greeting: '', online: true,
     adminOnly: false, maxPending: 3,
     personality: '', scenario: '', examples: '',
-    autoMode: false, model: 'openai', temperature: 0.8, maxHistory: 20,
+    autoMode: false, model: 'openai', temperature: 0.8, maxHistory: 30,
+    reactToBots: false, /* NOVO */
     ...opts
   };
 }
@@ -744,7 +747,8 @@ const S = {
   _createdAt: null, _adminNames: new Map(), _bans: [], _resumeTokens: new Map(),
   _rateLimit: new Map(), _typingTimers: new Map(),
   _speakAsBot: false, _inviteToken: '', _botThinking: new Map(),
-  _lastRename: new Map()  /* NOVO */
+  _lastRename: new Map(),
+  _botLastReact: new Map() /* NOVO */
 };
 
 function me() { return S.users.get(S.peer?.id); }
@@ -938,9 +942,7 @@ function closeRenameModal() {
   document.body.style.overflow = '';
 }
 $('renameCancelBtn').onclick = closeRenameModal;
-$('renameModal').addEventListener('click', (e) => {
-  if (e.target === $('renameModal')) closeRenameModal();
-});
+$('renameModal').addEventListener('click', (e) => { if (e.target === $('renameModal')) closeRenameModal(); });
 $('renameInput').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') { e.preventDefault(); $('renameSaveBtn').click(); }
   if (e.key === 'Escape') { e.preventDefault(); closeRenameModal(); }
@@ -949,13 +951,10 @@ $('renameSaveBtn').onclick = () => {
   const raw = $('renameInput').value.trim();
   if (!raw) { $('renameInput').focus(); return; }
   if (raw.length > MAX_NAME_LEN) return alert(`Máximo ${MAX_NAME_LEN} caracteres.`);
-  const current = me();
-  if (!current) return;
+  const current = me(); if (!current) return;
   if (raw === current.name) { closeRenameModal(); return; }
-
-  if (S.isHost) {
-    hostHandleChangeName(S.peer.id, { newName: raw });
-  } else {
+  if (S.isHost) hostHandleChangeName(S.peer.id, { newName: raw });
+  else {
     const c = S.conns.get('host');
     if (!c?.open) { alert('Sem conexão.'); return; }
     c.send({ type: 'change-name', newName: raw });
@@ -982,12 +981,10 @@ document.addEventListener('click', (e) => {
 function hostHandleChangeName(peerId, data) {
   if (!S.isHost) return;
   const user = S.users.get(peerId); if (!user) return;
-
   const newNameRaw = String(data.newName || '').trim().slice(0, MAX_NAME_LEN);
   if (!newNameRaw) return sendSysWarn(peerId, '⚠️ Nome não pode ser vazio.');
   if (newNameRaw === user.name) return;
 
-  /* Cooldown */
   const now = Date.now();
   const last = S._lastRename.get(peerId) || 0;
   if (now - last < RENAME_COOLDOWN_MS) {
@@ -995,37 +992,28 @@ function hostHandleChangeName(peerId, data) {
     return sendSysWarn(peerId, `⏳ Aguarde ${remain}s para trocar de nome novamente.`);
   }
 
-  /* Conflito com outro usuário */
   const lower = newNameRaw.toLowerCase();
   const conflict = [...S.users.values()].some(u => u.id !== peerId && u.name.toLowerCase() === lower);
-  if (conflict) {
-    return sendSysWarn(peerId, `⚠️ O nome "${newNameRaw}" já está em uso.`);
-  }
+  if (conflict) return sendSysWarn(peerId, `⚠️ O nome "${newNameRaw}" já está em uso.`);
 
   const oldName = user.name;
   const wasAdmin = user.role === 'admin';
   const prevPerms = user.perms || {};
 
-  /* Atualiza usuário */
   user.name = newNameRaw;
   S._lastRename.set(peerId, now);
 
-  /* Se é o próprio operador, atualiza S.myName e lastRoom */
   if (peerId === S.peer.id) {
     S.myName = newNameRaw;
     persistKV('lastRoom', { code: S.code, name: newNameRaw, role: 'operator' });
   }
 
-  /* Move cargo de admin se aplicável */
   if (wasAdmin) {
     S._adminNames.delete(oldName.toLowerCase());
     S._adminNames.set(newNameRaw.toLowerCase(), prevPerms);
   }
 
-  /* Atualiza resumeTokens deste device */
-  for (const [tok, d] of S._resumeTokens) {
-    if (d.deviceId === user.deviceId) d.name = newNameRaw;
-  }
+  for (const [tok, d] of S._resumeTokens) if (d.deviceId === user.deviceId) d.name = newNameRaw;
 
   persistRoom();
   broadcastAll({ type: 'users-update', users: [...S.users.values()] });
@@ -1035,30 +1023,121 @@ function hostHandleChangeName(peerId, data) {
 }
 
 /* ============================================================
-   IA
+   IA — CONSCIÊNCIA MULTIPLAYER
    ============================================================ */
-function buildSystemPrompt(bot) {
-  let p = `Você é "${bot.name}", um personagem em um RPG interativo multiplayer. NUNCA saia do personagem. NUNCA diga que é uma IA. Responda em português brasileiro, na primeira pessoa.\n\nRegras:\n- Ações entre asteriscos (ex: *sorri*)\n- Diálogos sem asteriscos\n- Seja imersivo, reaja ao contexto`;
-  if (bot.description) p += `\n\nDESCRIÇÃO:\n${bot.description}`;
-  if (bot.personality) p += `\n\nPERSONALIDADE:\n${bot.personality}`;
-  if (bot.scenario) p += `\n\nCENÁRIO:\n${bot.scenario}`;
-  if (bot.examples) p += `\n\nEXEMPLOS:\n${bot.examples}`;
-  return p;
+
+/* Constrói o contexto da cena: quem está presente, quem são os outros bots */
+function buildRoomContext(bot) {
+  const players = [...S.users.values()]
+    .filter(u => u.online !== false && u.role === 'user')
+    .map(u => u.name);
+
+  const admins = [...S.users.values()]
+    .filter(u => u.online !== false && u.role === 'admin')
+    .map(u => u.name);
+
+  const operatorName = S.myName;
+
+  const otherBots = S.settings.bots
+    .filter(b => b.online && b.id !== bot.id)
+    .map(b => `"${b.name}"${b.description ? ` — ${b.description}` : ''}`);
+
+  let ctx = `\n\n═══ CENA MULTIPLAYER COMPARTILHADA ═══\n`;
+  ctx += `\nVocê está participando de uma cena de RPG colaborativa na sala "${S.settings.roomName}".\n`;
+  ctx += `\n⚠️ REGRAS FUNDAMENTAIS DA CENA:\n`;
+  ctx += `• Esta é uma cena COMPARTILHADA. Múltiplos jogadores e personagens estão no MESMO universo, no MESMO espaço e no MESMO tempo que você.\n`;
+  ctx += `• TUDO que você disser é ouvido por TODOS os presentes.\n`;
+  ctx += `• TUDO que os outros disserem, você OUViu e PERCEBEU.\n`;
+  ctx += `• Você se LEMBRA de todas as conversas recentes da cena, mesmo com jogadores diferentes. Se Dante falou com você antes, e agora Lucas está falando, você tem plena consciência dos dois.\n`;
+  ctx += `• NUNCA trate cada jogador como se estivesse em uma conversa privada. É sempre uma cena pública com plateia.\n`;
+  ctx += `• Se um jogador estiver ausente, você não finge que ele está ali agora — mas você SE LEMBRA do que ele disse e pode mencionar isso naturalmente.\n`;
+  ctx += `• Se outro bot/personagem falou algo, você PERCEBEU e pode reagir ou referenciar isso.\n`;
+
+  ctx += `\n👥 PESSOAS NA CENA AGORA:\n`;
+  if (operatorName) ctx += `• ${operatorName} — narrador/mestre\n`;
+  for (const name of players) ctx += `• ${name} — jogador\n`;
+  for (const name of admins) ctx += `• ${name} — administrador/jogador\n`;
+
+  if (otherBots.length) {
+    ctx += `\n🎭 OUTROS PERSONAGENS (NPCs) NA CENA:\n`;
+    for (const b of otherBots) ctx += `• ${b}\n`;
+    ctx += `\nVocê percebe a presença destes personagens. Pode reagir ao que eles dizem ou fazem, se for natural para o seu personagem.\n`;
+  }
+
+  return ctx;
 }
-function getConversationHistory(botId, userId, limit = 20) {
-  const relevant = S.messages.filter(m => !m.deleted && (
-    (m.fromId === userId && m.relayBotId === botId) ||
-    (m.type === 'bot' && m.botId === botId && m.replyToName === (S.users.get(userId)?.name))
-  ));
+
+/* Pega o histórico de TODA a cena que este bot deveria ver */
+function getSceneHistory(botId, limit = 30) {
+  const relevant = S.messages.filter(m => {
+    if (m.deleted) return false;
+    if (m.type === 'system') return false;
+    /* Mensagens dirigidas a este bot (de qualquer jogador) */
+    if (m.type === 'user' && m.relayBotId === botId) return true;
+    /* Mensagens deste bot */
+    if (m.type === 'bot' && m.botId === botId) return true;
+    /* Mensagens do chat geral (visíveis por todos) */
+    if (m.type === 'user' && !m.relayBotId) return true;
+    /* Mensagens de outros bots (o bot vê o que acontece na cena) */
+    if (m.type === 'bot' && m.botId !== botId) return true;
+    return false;
+  });
   return relevant.slice(-limit);
 }
-async function callPollinationsAI(bot, history, userText, userName, retries = 2) {
+
+/* Formata o histórico como transcrição legível para a IA */
+function formatSceneHistory(history, currentBot) {
+  if (!history.length) return '(A cena está começando — ninguém falou nada ainda.)';
+  const lines = [];
+  for (const m of history) {
+    if (m.type === 'bot') {
+      if (m.botId === currentBot.id) {
+        lines.push(`VOCÊ (${m.fromName}): ${m.text}`);
+      } else {
+        lines.push(`${m.fromName} (outro personagem): ${m.text}`);
+      }
+    } else {
+      if (m.relayBotId) {
+        const addressedToMe = m.relayBotId === currentBot.id;
+        if (addressedToMe) {
+          lines.push(`${m.fromName} → fala com VOCÊ: ${m.text}`);
+        } else {
+          const targetBot = findBot(m.relayBotId);
+          lines.push(`${m.fromName} → fala com ${targetBot?.name || 'outro personagem'}: ${m.text}`);
+        }
+      } else {
+        lines.push(`${m.fromName} (no chat geral): ${m.text}`);
+      }
+    }
+  }
+  return lines.join('\n');
+}
+
+function buildSystemPrompt(bot) {
+  let p = `Você é "${bot.name}", um personagem em uma cena de RPG interativa multiplayer. NUNCA saia do personagem. NUNCA diga que é uma IA ou assistente. Responda sempre em português brasileiro, na primeira pessoa.\n\nRegras de estilo:\n• Ações, gestos e descrições entre asteriscos: *sorri*, *cruza os braços*\n• Diálogos sem asteriscos\n• Seja imersivo, reativo, coerente com o que já aconteceu\n• Respostas curtas a médias (2-5 parágrafos no máximo)`;
+  if (bot.description) p += `\n\nDESCRIÇÃO CURTA:\n${bot.description}`;
+  if (bot.personality) p += `\n\nPERSONALIDADE:\n${bot.personality}`;
+  if (bot.scenario) p += `\n\nCENÁRIO:\n${bot.scenario}`;
+  if (bot.examples) p += `\n\nEXEMPLOS DE DIÁLOGO:\n${bot.examples}`;
+  p += buildRoomContext(bot);
+  return p;
+}
+
+async function callPollinationsAI(bot, userText, userName, retries = 2) {
   const systemPrompt = buildSystemPrompt(bot);
-  const messages = [{ role: 'system', content: systemPrompt }];
-  for (const h of history) messages.push({ role: h.type === 'bot' ? 'assistant' : 'user', content: h.type === 'bot' ? String(h.text || '') : `${h.fromName || 'Jogador'}: ${h.text || ''}` });
-  messages.push({ role: 'user', content: `${userName}: ${userText}` });
+  const history = getSceneHistory(bot.id, bot.maxHistory || 30);
+  const transcript = formatSceneHistory(history, bot);
+
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: `═══ TRANSCRIÇÃO DA CENA ATÉ AGORA (ordem cronológica) ═══\n\n${transcript}\n\n═══ FIM DA TRANSCRIÇÃO ═══` },
+    { role: 'assistant', content: 'Entendido. Estou plenamente ciente do contexto da cena: quem está presente, o que aconteceu, o que já foi dito por cada pessoa (inclusive por mim). Vou responder mantendo total coerência com essa cena compartilhada.' },
+    { role: 'user', content: `${userName} se dirige a você: ${userText}` }
+  ];
+
   const model = AI_MODELS.some(m => m.value === bot.model) ? bot.model : 'openai';
   const temperature = Math.max(0, Math.min(2, Number(bot.temperature) || 0.8));
+
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const controller = new AbortController();
@@ -1079,13 +1158,136 @@ async function callPollinationsAI(bot, history, userText, userName, retries = 2)
     }
   }
 }
+
+/* Chamada especializada: reação espontânea a outro bot */
+async function callPollinationsAIForBotReaction(bot, sourceBot, sourceBotMsg, retries = 1) {
+  const systemPrompt = buildSystemPrompt(bot);
+  const history = getSceneHistory(bot.id, bot.maxHistory || 30);
+  const transcript = formatSceneHistory(history, bot);
+
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: `═══ TRANSCRIÇÃO DA CENA ═══\n\n${transcript}\n\n═══ FIM ═══` },
+    { role: 'assistant', content: 'Entendido. Estou ciente do contexto da cena.' },
+    { role: 'user', content: `[MOMENTO DE REAÇÃO ESPONTÂNEA]\n\nO personagem "${sourceBot.name}" acabou de se manifestar na cena agora. Se for natural para o seu personagem reagir ao que ele disse ou fez, faça isso — uma fala curta, um gesto, um olhar, uma ação. Pode ser dirigido a ele, a outro jogador, ou uma reação interna (pensamento/sentimento).\n\nSe o seu personagem não teria nada a acrescentar neste momento, responda APENAS com três pontos: "...".\n\nCaso contrário, reaja de forma curta (1-3 frases) e imersiva, mantendo total coerência com seu personagem.` }
+  ];
+
+  const model = AI_MODELS.some(m => m.value === bot.model) ? bot.model : 'openai';
+  const temperature = Math.max(0, Math.min(2, Number(bot.temperature) || 0.8));
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+      const res = await fetch('https://text.pollinations.ai/openai', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal,
+        body: JSON.stringify({ model, messages, temperature, referrer: 'projeto-hermes' })
+      });
+      clearTimeout(timer);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const content = data?.choices?.[0]?.message?.content;
+      if (!content || !content.trim()) throw new Error('Resposta vazia');
+      return content.trim();
+    } catch (e) {
+      if (attempt === retries) throw e;
+      await new Promise(r => setTimeout(r, 1500));
+    }
+  }
+}
+
+/* Verifica se algum bot deve reagir a uma mensagem de bot */
+function triggerBotReactions(sourceBotMsg) {
+  if (!S.isHost) return;
+  if (!sourceBotMsg?.botId) return;
+  /* Não reage a reações bot-to-bot (evita loops) */
+  if (sourceBotMsg.botToBotReaction) return;
+
+  const sourceBot = findBot(sourceBotMsg.botId);
+  if (!sourceBot) return;
+
+  const candidates = S.settings.bots.filter(b =>
+    b.online &&
+    b.reactToBots === true &&
+    b.id !== sourceBot.id
+  );
+
+  if (!candidates.length) return;
+
+  /* Embaralha candidatos e tenta um até passar nas verificações */
+  const shuffled = [...candidates].sort(() => Math.random() - 0.5);
+
+  for (const bot of shuffled) {
+    /* Cooldown */
+    const lastReact = S._botLastReact.get(bot.id) || 0;
+    if (Date.now() - lastReact < BOT_REACT_COOLDOWN_MS) continue;
+    /* Já está pensando? */
+    if (S._botThinking.get(bot.id)) continue;
+    /* Chance */
+    if (Math.random() > BOT_REACT_CHANCE) continue;
+
+    S._botLastReact.set(bot.id, Date.now());
+
+    setTimeout(() => {
+      /* Re-verifica estado antes de disparar */
+      if (!S.isHost) return;
+      if (S._botThinking.get(bot.id)) return;
+      const last2 = S.messages.slice(-2);
+      /* Não dispara se as últimas 2 mensagens já são de bots (evita cadeia) */
+      if (last2.filter(m => m.type === 'bot').length >= 2) return;
+      /* Se a última mensagem já não é a que disparou, aborta */
+      if (S.messages[S.messages.length - 1]?.id !== sourceBotMsg.id) return;
+      hostGenerateBotToBotReaction(bot, sourceBot, sourceBotMsg);
+    }, 2500 + Math.random() * 2500);
+
+    return; /* apenas 1 reação por mensagem */
+  }
+}
+
+async function hostGenerateBotToBotReaction(bot, sourceBot, sourceBotMsg) {
+  S._botThinking.set(bot.id, true);
+  broadcastAll({ type: 'bot-thinking', botId: bot.id, botName: bot.name, botEmoji: bot.emoji });
+  renderTypingLine();
+
+  try {
+    const reply = await callPollinationsAIForBotReaction(bot, sourceBot, sourceBotMsg);
+
+    /* Se a IA decidiu não reagir */
+    const trimmed = String(reply || '').trim();
+    if (!trimmed || trimmed === '...' || trimmed === '…' || /^[.\s…]+$/.test(trimmed)) {
+      return;
+    }
+
+    const botMsg = {
+      id: uuid(), type: 'bot', fromName: bot.name,
+      botId: bot.id, botEmoji: bot.emoji, botColor: bot.color,
+      text: trimmed.slice(0, 4000),
+      ts: Date.now(),
+      autoGenerated: true,
+      botToBotReaction: true,
+      reactingTo: sourceBotMsg.id,
+      reactingToName: sourceBot.name
+    };
+    addMessageLocal(botMsg);
+    broadcastAll({ type: 'chat', msg: botMsg });
+    beep(1046, 0.06, 0.03);
+  } catch (err) {
+    /* Falha silenciosa — não polui o chat com erros de reação opcional */
+    console.warn('[Hermes] Falha na reação bot-to-bot:', err);
+  } finally {
+    S._botThinking.delete(bot.id);
+    broadcastAll({ type: 'bot-thinking-end', botId: bot.id });
+    renderTypingLine();
+  }
+}
+
 async function testBotAI(bot) {
   const resultEl = document.getElementById('aiTestResult-' + bot.id);
   const statusEl = document.getElementById('aiStatus-' + bot.id);
   if (statusEl) { statusEl.textContent = '⏳ testando'; statusEl.className = 'ai-status testing'; }
   if (resultEl) { resultEl.className = 'ai-test-result'; resultEl.textContent = 'Enviando...'; }
   try {
-    const reply = await callPollinationsAI(bot, [], 'Diga "olá" e se apresente brevemente.', 'Mestre', 1);
+    const reply = await callPollinationsAI(bot, 'Diga "olá" e se apresente brevemente.', 'Mestre', 1);
     if (statusEl) { statusEl.textContent = '✅ ok'; statusEl.className = 'ai-status'; }
     if (resultEl) { resultEl.className = 'ai-test-result success show'; resultEl.innerHTML = `<strong>✅ Resposta:</strong>\n\n${escapeHtml(reply)}`; }
   } catch (e) {
@@ -1094,17 +1296,25 @@ async function testBotAI(bot) {
     setTimeout(() => { const cur = findBot(bot.id); if (statusEl && cur) { statusEl.textContent = cur.autoMode ? '🤖 IA' : 'manual'; statusEl.className = 'ai-status ' + (cur.autoMode ? '' : 'off'); } }, 5000);
   }
 }
+
 async function hostGenerateAndReply(peerId, user, bot, userText, originalMsgId) {
   S._botThinking.set(bot.id, true);
   broadcastAll({ type: 'bot-thinking', botId: bot.id, botName: bot.name, botEmoji: bot.emoji });
   renderTypingLine();
   try {
-    const history = getConversationHistory(bot.id, peerId, bot.maxHistory || 20);
-    const reply = await callPollinationsAI(bot, history, userText, user.name);
-    const botMsg = { id: uuid(), type: 'bot', fromName: bot.name, botId: bot.id, botEmoji: bot.emoji, botColor: bot.color, text: String(reply).slice(0, 4000), ts: Date.now(), autoGenerated: true, spokenTo: peerId, replyToName: user.name };
-    addMessageLocal(botMsg); broadcastAll({ type: 'chat', msg: botMsg });
+    const reply = await callPollinationsAI(bot, userText, user.name);
+    const botMsg = {
+      id: uuid(), type: 'bot', fromName: bot.name,
+      botId: bot.id, botEmoji: bot.emoji, botColor: bot.color,
+      text: String(reply).slice(0, 4000), ts: Date.now(),
+      autoGenerated: true, spokenTo: peerId, replyToName: user.name
+    };
+    addMessageLocal(botMsg);
+    broadcastAll({ type: 'chat', msg: botMsg });
     if (originalMsgId) { const orig = S.messages.find(m => m.id === originalMsgId); if (orig) { delete orig.relayPending; persistMessage(orig); } }
     beep(1046, 0.08, 0.04);
+    /* NOVO: depois de responder, dispara verificação de reação */
+    setTimeout(() => triggerBotReactions(botMsg), 1500);
   } catch (err) {
     const sysMsg = { id: uuid(), type: 'system', warn: true, text: `⚠️ ${bot.name} não conseguiu responder (${err.message}).`, ts: Date.now() };
     addMessageLocal(sysMsg); broadcastAll({ type: 'chat', msg: sysMsg });
@@ -1234,7 +1444,7 @@ function hostOnData(peerId, data) {
     case 'speak-as-bot': return hostHandleSpeakAsBot(peerId, data);
     case 'admin-action': return executeHostAction(peerId, data.action);
     case 'typing': return hostHandleTyping(peerId);
-    case 'change-name': return hostHandleChangeName(peerId, data);  /* NOVO */
+    case 'change-name': return hostHandleChangeName(peerId, data);
   }
 }
 
@@ -1309,6 +1519,8 @@ function hostHandleSpeakAsBot(peerId, data) {
   const botMsg = { id: uuid(), type: 'bot', fromName: bot.name, botId: bot.id, botEmoji: bot.emoji, botColor: bot.color, text, ts: Date.now(), spokenBy: user.name };
   addMessageLocal(botMsg); broadcastAll({ type: 'chat', msg: botMsg });
   clearTyping(peerId); beep(1046, 0.05, 0.03);
+  /* Também permite reação de outros bots */
+  setTimeout(() => triggerBotReactions(botMsg), 1500);
 }
 
 function checkRateLimit(peerId) {
@@ -1372,11 +1584,9 @@ function userOnData(data) {
   switch (data.type) {
     case 'welcome': return;
     case 'users-update': {
-      const before = me();
-      const beforeName = before?.name;
+      const before = me(); const beforeName = before?.name;
       S.users = new Map(data.users.map(u => [u.id, u]));
       const after = me();
-      /* Se meu próprio nome mudou (via host), atualiza lastRoom */
       if (after && beforeName && after.name !== beforeName) {
         S.myName = after.name;
         getKV('lastRoom').then(lr => { if (lr && lr.code === S.code) persistKV('lastRoom', { ...lr, name: after.name }); });
@@ -1590,7 +1800,6 @@ function renderUsers() {
     if (S._typingTimers.has(u.id)) { const t = document.createElement('span'); t.className = 'user-typing'; t.textContent = '✏️'; span.appendChild(t); }
     li.appendChild(span);
 
-    /* Botão de renomear SEMPRE visível na própria linha */
     if (isMe) {
       const rb = document.createElement('button');
       rb.className = 'mod-btn rename always';
@@ -1626,7 +1835,7 @@ function doKickUser(peerId) {
   for (const [tok, data] of [...S._resumeTokens]) if (data.deviceId === u.deviceId) S._resumeTokens.delete(tok);
   const conn = S.conns.get(peerId);
   if (conn) { try { conn.send({ type: 'kick', reason: 'Removido.' }); } catch {} setTimeout(() => { try { conn.close(); } catch {} }, 300); }
-  S.conns.delete(peerId); S.users.delete(peerId); S._rateLimit.delete(peerId); S._lastRename.delete(peerId); clearTyping(peerId);
+  S.conns.delete(peerId); S.users.delete(peerId); S._rateLimit.delete(peerId); S._lastRename.delete(peerId); S._botLastReact.delete(peerId); clearTyping(peerId);
   persistRoom(); broadcastAll({ type: 'users-update', users: [...S.users.values()] });
   addSystemMessageHost(`${u.name} foi removido.`);
   renderUsers(); renderMessages();
@@ -1667,9 +1876,11 @@ function renderMessages() {
   for (const m of S.messages) {
     if (m.deleted) continue;
     if (filter && !(m.text || '').toLowerCase().includes(filter) && !(m.fromName || '').toLowerCase().includes(filter)) continue;
-    const div = document.createElement('div'); div.className = 'msg ' + m.type + (m.warn ? ' warn' : '');
+    const div = document.createElement('div');
+    div.className = 'msg ' + m.type + (m.warn ? ' warn' : '') + (m.botToBotReaction ? ' bot-to-bot' : '');
     const time = new Date(m.ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const delBtn = canDel ? `<button class="del-btn" data-id="${escapeHtml(m.id)}" title="Apagar">✕</button>` : '';
+    const botToBotTag = m.botToBotReaction ? `<span class="bot-to-bot-tag">↩️ reagiu a ${escapeHtml(m.reactingToName || 'outro')}</span>` : '';
 
     if (m.type === 'system') {
       div.innerHTML = `<span class="text">${escapeHtml(m.text)}</span>`;
@@ -1682,6 +1893,7 @@ function renderMessages() {
       div.innerHTML =
         `<span class="name" style="color:${escapeHtml(vis.color)}">${nameVisual}${escapeHtml(m.fromName)}</span>` +
         (m.replyToName ? ` <span class="time">→ @${escapeHtml(m.replyToName)}</span>` : '') +
+        botToBotTag +
         `<span class="time">${time}</span>` +
         `<div class="text">${escapeHtml(m.text)}</div>` + delBtn;
     } else {
@@ -1743,6 +1955,8 @@ function doDeliverRelay(relayId, text) {
   addMessageLocal(botMsg); broadcastAll({ type: 'chat', msg: botMsg });
   broadcastAll({ type: 'pending-update', pending: [...S.pending.values()] });
   persistPending(); renderPending(); renderMessages(); beep(1046, 0.08, 0.04);
+  /* Permite reação de outros bots */
+  setTimeout(() => triggerBotReactions(botMsg), 1500);
 }
 function doCancelRelay(relayId) {
   S.pending.delete(relayId);
@@ -1759,7 +1973,7 @@ function renderTargetSelect() {
   for (const b of online) {
     const o = document.createElement('option');
     o.value = b.id;
-    o.textContent = `${b.emoji} ${b.name}${!b.online ? ' (offline)' : ''}${b.adminOnly ? ' 🔒' : ''}${b.autoMode ? ' 🤖' : ''}`;
+    o.textContent = `${b.emoji} ${b.name}${!b.online ? ' (offline)' : ''}${b.adminOnly ? ' 🔒' : ''}${b.autoMode ? ' 🤖' : ''}${b.reactToBots ? ' 🤝' : ''}`;
     if (b.description) o.title = b.description;
     sel.appendChild(o);
   }
@@ -1803,11 +2017,12 @@ function renderQuickMentions() {
   c.style.display = 'flex';
   for (const b of online) {
     const chip = document.createElement('button');
-    chip.className = 'mention-chip' + (b.autoMode ? ' ai' : ''); chip.type = 'button';
+    chip.className = 'mention-chip' + (b.autoMode ? ' ai' : '') + (b.reactToBots ? ' reactive' : ''); chip.type = 'button';
     const focus = `${b.avatarFocusX ?? 50}% ${b.avatarFocusY ?? 50}%`;
     const visual = b.avatar ? `<img class="mention-avatar" src="${escapeHtml(b.avatar)}" style="object-position: ${focus}" alt="">` : `<span>${escapeHtml(b.emoji)}</span>`;
-    chip.innerHTML = `${visual} ${escapeHtml(b.name)}${b.autoMode ? ' 🤖' : ''}`;
-    chip.title = (b.description || 'Falar com bot') + (b.autoMode ? ' — IA' : ' — manual');
+    const badges = `${b.autoMode ? ' 🤖' : ''}${b.reactToBots ? ' 🤝' : ''}`;
+    chip.innerHTML = `${visual} ${escapeHtml(b.name)}${badges}`;
+    chip.title = (b.description || 'Falar com bot') + (b.autoMode ? ' — IA' : ' — manual') + (b.reactToBots ? ' — reativo' : '');
     chip.onclick = () => { $('targetSelect').value = b.id; updateSpeakAsBotVisibility(); updateInputPlaceholder(); $('messageInput').focus(); };
     c.appendChild(chip);
   }
@@ -1829,6 +2044,7 @@ function sendMessage() {
     if (S.isHost) {
       const botMsg = { id: uuid(), type: 'bot', fromName: bot.name, botId: bot.id, botEmoji: bot.emoji, botColor: bot.color, text, ts: Date.now(), spokenBy: myName };
       addMessageLocal(botMsg); broadcastAll({ type: 'chat', msg: botMsg }); beep(1046, 0.05, 0.03);
+      setTimeout(() => triggerBotReactions(botMsg), 1500);
     } else { const c = S.conns.get('host'); if (c?.open) c.send({ type: 'speak-as-bot', botId: targetBotId, text }); }
     $('messageInput').focus(); return;
   }
@@ -1899,6 +2115,9 @@ function renderBotsList() {
     const descId = `desc-${bot.id}`, persId = `pers-${bot.id}`, scenId = `scen-${bot.id}`, exemId = `exem-${bot.id}`, greetId = `greet-${bot.id}`;
     const descCountId = `descCount-${bot.id}`, persCountId = `persCount-${bot.id}`, scenCountId = `scenCount-${bot.id}`, exemCountId = `exemCount-${bot.id}`, greetCountId = `greetCount-${bot.id}`;
 
+    const aiStatusClass = bot.autoMode ? '' : 'off';
+    const reactiveClass = bot.reactToBots ? '' : 'off';
+
     row.innerHTML = `
       <div class="bot-config-header">
         <label class="bot-avatar-picker ${editable ? '' : 'disabled'}" title="${editable ? 'Clique para escolher imagem' : 'Avatar'}">
@@ -1908,7 +2127,7 @@ function renderBotsList() {
         <input type="text" class="bot-emoji-input" value="${escapeHtml(bot.emoji)}" maxlength="3" title="Emoji" style="width:50px; text-align:center; flex:0 0 50px" ${editable ? '' : 'disabled'}>
         <input type="text" class="bot-name-input" value="${escapeHtml(bot.name)}" maxlength="40" ${editable ? '' : 'disabled'}>
         <input type="color" class="bot-color-input" value="${escapeHtml(bot.color)}" style="width:40px; flex:0 0 40px" title="Cor" ${editable ? '' : 'disabled'}>
-        <span class="ai-status ${bot.autoMode ? '' : 'off'}" id="aiStatus-${bot.id}">${bot.autoMode ? '🤖 IA' : 'manual'}</span>
+        <span class="ai-status ${aiStatusClass}" id="aiStatus-${bot.id}">${bot.autoMode ? '🤖 IA' : 'manual'}</span>
         ${editable ? '<button class="icon-btn remove-bot" title="Remover">🗑️</button>' : ''}
       </div>
 
@@ -1916,6 +2135,12 @@ function renderBotsList() {
         <input type="checkbox" class="bot-automode-input" id="autoMode-${bot.id}" ${bot.autoMode ? 'checked' : ''} ${editable ? '' : 'disabled'}>
         <label for="autoMode-${bot.id}" style="margin:0; cursor:pointer; font-weight:600">🤖 IA Automática</label>
         <span style="margin-left:auto; font-size:11px; opacity:0.7">${bot.autoMode ? 'Pollinations responde' : 'Fila manual'}</span>
+      </div>
+
+      <div class="bot-to-bot-toggle-row ${reactiveClass}">
+        <input type="checkbox" class="bot-reactToBots-input" id="reactToBots-${bot.id}" ${bot.reactToBots ? 'checked' : ''} ${editable ? '' : 'disabled'}>
+        <label for="reactToBots-${bot.id}" style="margin:0; cursor:pointer; font-weight:600">🤝 Reagir a outros bots</label>
+        <span style="margin-left:auto; font-size:11px; opacity:0.7">${bot.reactToBots ? 'Pode comentar o que outros bots dizem' : 'Só reage a jogadores'}</span>
       </div>
 
       <div class="bot-config-grid">
@@ -1946,7 +2171,7 @@ function renderBotsList() {
         </div>
         <div><label>Modelo</label><select class="bot-model-input" ${editable ? '' : 'disabled'}>${modelOptions}</select></div>
         <div><label>Temperatura (${bot.temperature})</label><input type="range" class="bot-temp-input" min="0" max="1.5" step="0.1" value="${bot.temperature}" ${editable ? '' : 'disabled'}></div>
-        <div><label>Máx. histórico</label><input type="number" class="bot-maxhistory-input" value="${bot.maxHistory || 20}" min="4" max="40" ${editable ? '' : 'disabled'}></div>
+        <div><label>Máx. histórico da cena</label><input type="number" class="bot-maxhistory-input" value="${bot.maxHistory || 30}" min="10" max="80" ${editable ? '' : 'disabled'}></div>
         <div><label>Máx. fila manual</label><input type="number" class="bot-maxpending-input" value="${bot.maxPending}" min="1" max="20" ${editable ? '' : 'disabled'}></div>
         <div style="grid-column: 1 / -1; flex-direction: row; gap: 12px; margin-top: 4px">
           <label style="margin:0;display:flex;align-items:center;gap:4px"><input type="checkbox" class="bot-online-input" ${bot.online ? 'checked' : ''} ${editable ? '' : 'disabled'}> Online</label>
@@ -1991,7 +2216,7 @@ function renderBotsList() {
       row.querySelector('.bot-model-input').onchange = (e) => updateBot(bot.id, { model: e.target.value });
       row.querySelector('.bot-temp-input').oninput = (e) => { e.target.previousElementSibling.textContent = `Temperatura (${e.target.value})`; };
       row.querySelector('.bot-temp-input').onchange = (e) => updateBot(bot.id, { temperature: Number(e.target.value) });
-      row.querySelector('.bot-maxhistory-input').onchange = (e) => updateBot(bot.id, { maxHistory: Math.max(4, Math.min(40, parseInt(e.target.value) || 20)) });
+      row.querySelector('.bot-maxhistory-input').onchange = (e) => updateBot(bot.id, { maxHistory: Math.max(10, Math.min(80, parseInt(e.target.value) || 30)) });
       row.querySelector('.bot-maxpending-input').onchange = (e) => updateBot(bot.id, { maxPending: Math.max(1, Math.min(20, parseInt(e.target.value) || 3)) });
       row.querySelector('.bot-online-input').onchange = (e) => updateBot(bot.id, { online: e.target.checked });
       row.querySelector('.bot-adminonly-input').onchange = (e) => updateBot(bot.id, { adminOnly: e.target.checked });
@@ -2001,6 +2226,9 @@ function renderBotsList() {
           if (!confirm(`O bot "${bot.name}" não tem personalidade nem cenário. Continuar?`)) { e.target.checked = false; return; }
         }
         updateBot(bot.id, { autoMode: enabled });
+      };
+      row.querySelector('.bot-reactToBots-input').onchange = (e) => {
+        updateBot(bot.id, { reactToBots: e.target.checked });
       };
       row.querySelector('.remove-bot').onclick = () => { if (!confirm(`Remover "${bot.name}"?`)) return; saveSettings({ bots: S.settings.bots.filter(b => b.id !== bot.id) }); };
       const avatarFile = row.querySelector('.bot-avatar-file');
@@ -2091,7 +2319,7 @@ function renderAdminUsersList() {
   }
   if (!c.children.length) c.innerHTML = '<p class="empty">Nenhum outro participante.</p>';
 }
-function doPromote(targetId, perms) { const u = S.users.get(targetId); if (!u || u.role === 'operator') return; const wasAdmin = u.role === 'admin'; const oldPerms = u.perms || {}; u.role = 'admin'; u.perms = { ...(perms || {}) }; S._adminNames.set(u.name.toLowerCase(), u.perms); for (const [tok, data] of S._resumeTokens) if (data.deviceId === u.deviceId) { data.role = 'admin'; data.perms = u.perms; } persistRoom(); broadcastAll({ type: 'users-update', users: [...S.users.values()] }); broadcastInviteToken(); renderUsers(); if (!isEditingBotField()) renderSettingsModal(); }
+function doPromote(targetId, perms) { const u = S.users.get(targetId); if (!u || u.role === 'operator') return; u.role = 'admin'; u.perms = { ...(perms || {}) }; S._adminNames.set(u.name.toLowerCase(), u.perms); for (const [tok, data] of S._resumeTokens) if (data.deviceId === u.deviceId) { data.role = 'admin'; data.perms = u.perms; } persistRoom(); broadcastAll({ type: 'users-update', users: [...S.users.values()] }); broadcastInviteToken(); renderUsers(); if (!isEditingBotField()) renderSettingsModal(); }
 function doDemote(targetId) { const u = S.users.get(targetId); if (!u || u.role === 'operator') return; S._adminNames.delete(u.name.toLowerCase()); u.role = 'user'; u.perms = {}; for (const [tok, data] of S._resumeTokens) if (data.deviceId === u.deviceId) { data.role = 'user'; data.perms = {}; } persistRoom(); broadcastAll({ type: 'users-update', users: [...S.users.values()] }); renderUsers(); if (!isEditingBotField()) renderSettingsModal(); }
 
 $('setRoomName').onchange = () => saveSettings({ roomName: $('setRoomName').value.trim().slice(0, 40) || 'Projeto Hermes' });
