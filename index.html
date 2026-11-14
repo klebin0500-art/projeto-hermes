@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<!-- BUILD: v15 — Projeto Hermes + campos de bot sem truncamento -->
+<!-- BUILD: v16 — Projeto Hermes + troca de nick livre -->
 <title>Projeto Hermes</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -62,6 +62,7 @@
   .user-item { display: flex; align-items: center; gap: 4px; padding: 6px 8px; border-radius: 6px; color: #ccc; }
   .user-item:hover { background: #232326; }
   .user-item.offline { opacity: 0.5; }
+  .user-item.is-me { background: rgba(88, 101, 242, 0.08); }
   .user-item .user-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .user-item .user-role { font-size: 10px; color: white; padding: 1px 6px; border-radius: 4px; text-transform: uppercase; font-weight: 600; }
   .user-role.role-op { background: #5865f2; }
@@ -74,7 +75,10 @@
   .mod-btn.kick { color: #b91c1c; }
   .mod-btn.ban { color: #dc2626; }
   .mod-btn.mute { color: #f59e0b; }
+  .mod-btn.rename { color: #5865f2; }
   .mod-btn:hover { color: #fff; background: #3a3a3f; }
+  /* Rename button sempre visível na própria linha */
+  .user-item .mod-btn.rename.always { visibility: visible; }
   .sidebar-footer { padding: 12px 16px; border-top: 1px solid #2a2a2e; display: flex; flex-direction: column; gap: 6px; }
   .sidebar-footer button { text-align: left; }
   .save-indicator { font-size: 11px; color: #4ade80; padding: 6px 16px; border-top: 1px solid #2a2a2e; display: flex; align-items: center; gap: 6px; }
@@ -190,16 +194,7 @@
   .add-bot-row input { flex: 1; }
   .add-bot-row button { background: #2a2a2e; border: 1px solid #3a3a3f; color: #e6e6e8; padding: 0 12px; border-radius: 6px; }
 
-  /* NOVO: contador de caracteres */
-  .char-count {
-    font-size: 10px;
-    color: #666;
-    text-align: right;
-    margin-top: 3px;
-    font-family: ui-monospace, monospace;
-    font-feature-settings: 'tnum';
-    user-select: none;
-  }
+  .char-count { font-size: 10px; color: #666; text-align: right; margin-top: 3px; font-family: ui-monospace, monospace; font-feature-settings: 'tnum'; user-select: none; }
   .char-count.warn { color: #f59e0b; }
   .char-count.limit { color: #ef4444; font-weight: 600; }
 
@@ -250,12 +245,7 @@
   .crop-card { max-width: 360px; text-align: center; }
   .crop-card h2 { margin: 0 0 6px; }
   .crop-card p { color: #888; font-size: 12px; line-height: 1.5; margin: 0 0 16px; }
-  .crop-viewport {
-    width: 240px; height: 240px; border-radius: 50%; overflow: hidden; position: relative;
-    background: #000; margin: 0 auto 16px; cursor: grab;
-    border: 3px solid #2a2a2e; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-    touch-action: none; user-select: none;
-  }
+  .crop-viewport { width: 240px; height: 240px; border-radius: 50%; overflow: hidden; position: relative; background: #000; margin: 0 auto 16px; cursor: grab; border: 3px solid #2a2a2e; box-shadow: 0 8px 24px rgba(0,0,0,0.5); touch-action: none; user-select: none; }
   .crop-viewport:active { cursor: grabbing; }
   .crop-viewport::after { content: ''; position: absolute; inset: 0; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1); pointer-events: none; }
   .crop-viewport img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; pointer-events: none; user-select: none; -webkit-user-drag: none; display: block; }
@@ -273,6 +263,22 @@
   .avatar-lightbox-content p.empty-desc { display: none; }
   .avatar-lightbox-preview { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #2a2a2e; color: #888; font-size: 12px; }
   .preview-circle { width: 48px; height: 48px; border-radius: 50%; background-size: cover; background-position: 50% 50%; background-repeat: no-repeat; border: 2px solid #2a2a2e; background-color: #141415; flex-shrink: 0; }
+
+  .rename-card { max-width: 380px; }
+  .rename-card h2 { margin: 0 0 6px; }
+  .rename-card p { color: #888; font-size: 12px; line-height: 1.5; margin: 0 0 14px; }
+  .rename-card .current-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: #141415;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #aaa;
+    margin-bottom: 14px;
+  }
+  .rename-card .current-name strong { color: #8eb4ff; }
 
   @media (max-width: 900px) {
     #app { grid-template-columns: 1fr; }
@@ -424,7 +430,7 @@
       <button id="renewInviteBtn" class="primary" style="width:100%; margin-top:12px">🔄 Renovar código de convite</button>
     </div>
     <div id="stab-bots" class="stab-content" style="display:none">
-      <div class="help-box">💡 Os campos de personalidade/cenário/exemplos têm <b>auto-resize</b> e <b>contador</b>. Clique no avatar para enquadrar imagem.</div>
+      <div class="help-box">💡 Os campos de personalidade/cenário/exemplos têm auto-resize e contador. Clique no avatar para enquadrar imagem.</div>
       <div id="botsList"></div>
       <div class="add-bot-row">
         <input id="newBotName" placeholder="Nome do novo bot" maxlength="40">
@@ -473,9 +479,22 @@
   </div>
 </div>
 
+<div id="renameModal" class="modal" style="display:none">
+  <div class="modal-card rename-card">
+    <h2>Mudar meu nome</h2>
+    <p>Escolha como você aparece no chat. Você pode trocar de novo após 30 segundos.</p>
+    <div class="current-name">Nome atual: <strong id="renameCurrentName">—</strong></div>
+    <input id="renameInput" maxlength="40" placeholder="Novo nome">
+    <div class="modal-actions">
+      <button id="renameCancelBtn" class="secondary">Cancelar</button>
+      <button id="renameSaveBtn" class="primary">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ============================================================
-   PROJETO HERMES v15 — campos de bot sem truncamento
+   PROJETO HERMES v16 — troca de nick
    ============================================================ */
 
 const $ = (id) => document.getElementById(id);
@@ -515,14 +534,7 @@ function getDeviceId() {
   } catch { return uuid(); }
 }
 
-/* === LIMITES DE CAMPOS (antes eram 2000/2000/3000) === */
-const BOT_FIELD_LIMITS = {
-  description: 500,
-  personality: 15000,
-  scenario:    15000,
-  examples:    20000,
-  greeting:     500
-};
+const BOT_FIELD_LIMITS = { description: 500, personality: 15000, scenario: 15000, examples: 20000, greeting: 500 };
 
 const AVATAR_THUMB_SIZE = 256;
 const AVATAR_THUMB_QUALITY = 0.85;
@@ -578,6 +590,9 @@ const RATE_LIMIT_MS = 800;
 const TYPING_TIMEOUT_MS = 2500;
 const BG_MAX_BYTES = 500000;
 const AI_TIMEOUT_MS = 60000;
+/* NOVO: cooldown de renomeação */
+const RENAME_COOLDOWN_MS = 30000;
+const MAX_NAME_LEN = 40;
 
 const PERMS = {
   kickUsers: 'Expulsar usuários', banUsers: 'Banir/desbanir', muteUsers: 'Silenciar',
@@ -728,7 +743,8 @@ const S = {
   settings: { roomName: 'Projeto Hermes', bots: [makeBot('Bot A'), makeBot('Bot B')], allowFreeChat: true, background: '' },
   _createdAt: null, _adminNames: new Map(), _bans: [], _resumeTokens: new Map(),
   _rateLimit: new Map(), _typingTimers: new Map(),
-  _speakAsBot: false, _inviteToken: '', _botThinking: new Map()
+  _speakAsBot: false, _inviteToken: '', _botThinking: new Map(),
+  _lastRename: new Map()  /* NOVO */
 };
 
 function me() { return S.users.get(S.peer?.id); }
@@ -776,22 +792,21 @@ function canSeeInvite(user) {
 function getCurrentInviteCode() { return S.code + (S._inviteToken ? '-' + S._inviteToken : '-'); }
 function isValidInviteToken(token) { return !!(token && S._inviteToken && String(token).toUpperCase().trim() === S._inviteToken.toUpperCase()); }
 
-/* NOVO: detecta se o usuário está com foco em um campo de bot */
 function isEditingBotField() {
   const a = document.activeElement;
   return !!(a && a.closest && a.closest('.bot-config-row'));
 }
-
-/* NOVO: auto-resize + contador */
 function autoResize(textarea, maxHeight = 500) {
   textarea.style.height = 'auto';
   textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + 'px';
 }
 function bindAutoResize(textarea) {
+  if (!textarea) return;
   textarea.addEventListener('input', () => autoResize(textarea));
   setTimeout(() => autoResize(textarea), 0);
 }
 function bindCharCounter(input, limit, counterEl) {
+  if (!input || !counterEl) return;
   const update = () => {
     const len = input.value.length;
     counterEl.textContent = `${len.toLocaleString('pt-BR')}/${limit.toLocaleString('pt-BR')}`;
@@ -842,7 +857,6 @@ function closeCropModal() {
   document.body.style.overflow = '';
   _cropState.botId = null; _cropState.imageDataUrl = null; _cropState.dragging = false;
 }
-
 (function setupCropDrag() {
   const viewport = $('cropViewport');
   const start = (x, y) => { _cropState.dragging = true; _cropState.startX = x; _cropState.startY = y; _cropState.startFocusX = _cropState.focusX; _cropState.startFocusY = _cropState.focusY; };
@@ -862,7 +876,6 @@ function closeCropModal() {
   window.addEventListener('touchmove', (e) => { if (_cropState.dragging && e.touches.length === 1) move(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
   window.addEventListener('touchend', end);
 })();
-
 $('cropCancelBtn').onclick = closeCropModal;
 $('cropSaveBtn').onclick = async () => {
   if (!_cropState.botId || !_cropState.imageDataUrl) return;
@@ -909,8 +922,50 @@ function closeAvatarLightbox() {
 $('avatarLightboxClose').onclick = closeAvatarLightbox;
 $('avatarLightboxBackdrop').onclick = closeAvatarLightbox;
 
+/* ============================================================
+   RENAME MODAL
+   ============================================================ */
+function openRenameModal() {
+  const m = me(); if (!m) return;
+  $('renameCurrentName').textContent = m.name;
+  $('renameInput').value = m.name;
+  $('renameModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => { $('renameInput').focus(); $('renameInput').select(); }, 50);
+}
+function closeRenameModal() {
+  $('renameModal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+$('renameCancelBtn').onclick = closeRenameModal;
+$('renameModal').addEventListener('click', (e) => {
+  if (e.target === $('renameModal')) closeRenameModal();
+});
+$('renameInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); $('renameSaveBtn').click(); }
+  if (e.key === 'Escape') { e.preventDefault(); closeRenameModal(); }
+});
+$('renameSaveBtn').onclick = () => {
+  const raw = $('renameInput').value.trim();
+  if (!raw) { $('renameInput').focus(); return; }
+  if (raw.length > MAX_NAME_LEN) return alert(`Máximo ${MAX_NAME_LEN} caracteres.`);
+  const current = me();
+  if (!current) return;
+  if (raw === current.name) { closeRenameModal(); return; }
+
+  if (S.isHost) {
+    hostHandleChangeName(S.peer.id, { newName: raw });
+  } else {
+    const c = S.conns.get('host');
+    if (!c?.open) { alert('Sem conexão.'); return; }
+    c.send({ type: 'change-name', newName: raw });
+  }
+  closeRenameModal();
+};
+
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
+    if ($('renameModal').style.display !== 'none') { e.preventDefault(); closeRenameModal(); return; }
     if ($('avatarLightbox').style.display !== 'none') { e.preventDefault(); closeAvatarLightbox(); return; }
     if ($('cropModal').style.display !== 'none') { e.preventDefault(); closeCropModal(); return; }
     if ($('settingsModal').style.display !== 'none') $('settingsModal').style.display = 'none';
@@ -922,10 +977,68 @@ document.addEventListener('click', (e) => {
 });
 
 /* ============================================================
-   IA — Pollinations
+   HOST: trocar nome
+   ============================================================ */
+function hostHandleChangeName(peerId, data) {
+  if (!S.isHost) return;
+  const user = S.users.get(peerId); if (!user) return;
+
+  const newNameRaw = String(data.newName || '').trim().slice(0, MAX_NAME_LEN);
+  if (!newNameRaw) return sendSysWarn(peerId, '⚠️ Nome não pode ser vazio.');
+  if (newNameRaw === user.name) return;
+
+  /* Cooldown */
+  const now = Date.now();
+  const last = S._lastRename.get(peerId) || 0;
+  if (now - last < RENAME_COOLDOWN_MS) {
+    const remain = Math.ceil((RENAME_COOLDOWN_MS - (now - last)) / 1000);
+    return sendSysWarn(peerId, `⏳ Aguarde ${remain}s para trocar de nome novamente.`);
+  }
+
+  /* Conflito com outro usuário */
+  const lower = newNameRaw.toLowerCase();
+  const conflict = [...S.users.values()].some(u => u.id !== peerId && u.name.toLowerCase() === lower);
+  if (conflict) {
+    return sendSysWarn(peerId, `⚠️ O nome "${newNameRaw}" já está em uso.`);
+  }
+
+  const oldName = user.name;
+  const wasAdmin = user.role === 'admin';
+  const prevPerms = user.perms || {};
+
+  /* Atualiza usuário */
+  user.name = newNameRaw;
+  S._lastRename.set(peerId, now);
+
+  /* Se é o próprio operador, atualiza S.myName e lastRoom */
+  if (peerId === S.peer.id) {
+    S.myName = newNameRaw;
+    persistKV('lastRoom', { code: S.code, name: newNameRaw, role: 'operator' });
+  }
+
+  /* Move cargo de admin se aplicável */
+  if (wasAdmin) {
+    S._adminNames.delete(oldName.toLowerCase());
+    S._adminNames.set(newNameRaw.toLowerCase(), prevPerms);
+  }
+
+  /* Atualiza resumeTokens deste device */
+  for (const [tok, d] of S._resumeTokens) {
+    if (d.deviceId === user.deviceId) d.name = newNameRaw;
+  }
+
+  persistRoom();
+  broadcastAll({ type: 'users-update', users: [...S.users.values()] });
+  addSystemMessageHost(`✏️ ${oldName} agora se chama ${newNameRaw}.`);
+  renderUsers();
+  if ($('settingsModal').style.display !== 'none' && !isEditingBotField()) renderSettingsModal();
+}
+
+/* ============================================================
+   IA
    ============================================================ */
 function buildSystemPrompt(bot) {
-  let p = `Você é "${bot.name}", um personagem em um RPG interativo multiplayer. NUNCA saia do personagem. NUNCA diga que é uma IA. Responda em português brasileiro, na primeira pessoa.\n\nRegras:\n- Ações entre asteriscos (ex: *sorri*)\n- Diálogos sem asteriscos\n- Seja imersivo, reaja ao contexto, mantenha coerência`;
+  let p = `Você é "${bot.name}", um personagem em um RPG interativo multiplayer. NUNCA saia do personagem. NUNCA diga que é uma IA. Responda em português brasileiro, na primeira pessoa.\n\nRegras:\n- Ações entre asteriscos (ex: *sorri*)\n- Diálogos sem asteriscos\n- Seja imersivo, reaja ao contexto`;
   if (bot.description) p += `\n\nDESCRIÇÃO:\n${bot.description}`;
   if (bot.personality) p += `\n\nPERSONALIDADE:\n${bot.personality}`;
   if (bot.scenario) p += `\n\nCENÁRIO:\n${bot.scenario}`;
@@ -981,7 +1094,6 @@ async function testBotAI(bot) {
     setTimeout(() => { const cur = findBot(bot.id); if (statusEl && cur) { statusEl.textContent = cur.autoMode ? '🤖 IA' : 'manual'; statusEl.className = 'ai-status ' + (cur.autoMode ? '' : 'off'); } }, 5000);
   }
 }
-
 async function hostGenerateAndReply(peerId, user, bot, userText, originalMsgId) {
   S._botThinking.set(bot.id, true);
   broadcastAll({ type: 'bot-thinking', botId: bot.id, botName: bot.name, botEmoji: bot.emoji });
@@ -994,7 +1106,7 @@ async function hostGenerateAndReply(peerId, user, bot, userText, originalMsgId) 
     if (originalMsgId) { const orig = S.messages.find(m => m.id === originalMsgId); if (orig) { delete orig.relayPending; persistMessage(orig); } }
     beep(1046, 0.08, 0.04);
   } catch (err) {
-    const sysMsg = { id: uuid(), type: 'system', warn: true, text: `⚠️ ${bot.name} não conseguiu responder (${err.message}). Tente em alguns segundos.`, ts: Date.now() };
+    const sysMsg = { id: uuid(), type: 'system', warn: true, text: `⚠️ ${bot.name} não conseguiu responder (${err.message}).`, ts: Date.now() };
     addMessageLocal(sysMsg); broadcastAll({ type: 'chat', msg: sysMsg });
     if (originalMsgId) { const orig = S.messages.find(m => m.id === originalMsgId); if (orig) { delete orig.relayPending; persistMessage(orig); } }
   } finally {
@@ -1004,6 +1116,9 @@ async function hostGenerateAndReply(peerId, user, bot, userText, originalMsgId) 
   }
 }
 
+/* ============================================================
+   SETUP / HOST / CLIENT
+   ============================================================ */
 function showScreen(name) { $('setup').style.display = name === 'setup' ? 'flex' : 'none'; $('app').style.display = name === 'app' ? 'grid' : 'none'; }
 function safeCopy(text) {
   if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).catch(() => prompt('Copie:', text));
@@ -1061,7 +1176,7 @@ async function createRoom(name, code) {
 function onHostNewConnection(conn) {
   conn.on('open', () => {
     const meta = conn.metadata || {};
-    const rawName = String(meta.name || '').slice(0, 40).trim();
+    const rawName = String(meta.name || '').slice(0, MAX_NAME_LEN).trim();
     const deviceId = String(meta.deviceId || '').slice(0, 64);
     const inviteToken = String(meta.inviteToken || '').toUpperCase().trim();
     const resumeToken = String(meta.resumeToken || '');
@@ -1119,6 +1234,7 @@ function hostOnData(peerId, data) {
     case 'speak-as-bot': return hostHandleSpeakAsBot(peerId, data);
     case 'admin-action': return executeHostAction(peerId, data.action);
     case 'typing': return hostHandleTyping(peerId);
+    case 'change-name': return hostHandleChangeName(peerId, data);  /* NOVO */
   }
 }
 
@@ -1202,7 +1318,7 @@ function checkRateLimit(peerId) {
 }
 function hostOnDisconnect(peerId) {
   const user = S.users.get(peerId); if (!user) return;
-  S.conns.delete(peerId); S._rateLimit.delete(peerId); clearTyping(peerId);
+  S.conns.delete(peerId); S._rateLimit.delete(peerId); S._lastRename.delete(peerId); clearTyping(peerId);
   user.online = false; user.lastSeen = Date.now();
   let changed = false;
   for (const [id, r] of S.pending) if (r.userId === peerId) { S.pending.delete(id); const orig = S.messages.find(m => m.relayPending === id); if (orig) { delete orig.relayPending; persistMessage(orig); } changed = true; }
@@ -1255,10 +1371,19 @@ function userOnData(data) {
   if (!data?.type) return;
   switch (data.type) {
     case 'welcome': return;
-    case 'users-update':
+    case 'users-update': {
+      const before = me();
+      const beforeName = before?.name;
       S.users = new Map(data.users.map(u => [u.id, u]));
+      const after = me();
+      /* Se meu próprio nome mudou (via host), atualiza lastRoom */
+      if (after && beforeName && after.name !== beforeName) {
+        S.myName = after.name;
+        getKV('lastRoom').then(lr => { if (lr && lr.code === S.code) persistKV('lastRoom', { ...lr, name: after.name }); });
+      }
       if (!canSeeInvite(me())) S._inviteToken = '';
       renderUsers(); applyMyPermissions(); return;
+    }
     case 'chat':
       const prevLen = S.messages.length;
       addMessageLocal(data.msg);
@@ -1274,10 +1399,7 @@ function userOnData(data) {
     case 'settings-update':
       S.settings = data.settings;
       applySettings();
-      /* NOVO: só re-renderiza modal se o usuário NÃO estiver editando um campo de bot */
-      if ($('settingsModal').style.display !== 'none' && !isEditingBotField()) {
-        renderSettingsModal();
-      }
+      if ($('settingsModal').style.display !== 'none' && !isEditingBotField()) renderSettingsModal();
       return;
     case 'invite-token-update':
       S._inviteToken = data.inviteToken || '';
@@ -1455,17 +1577,33 @@ function renderUsers() {
     if (order[a.role] !== order[b.role]) return order[a.role] - order[b.role];
     return a.name.localeCompare(b.name);
   });
+  const myId = S.peer?.id;
   for (const u of users) {
     const isOffline = u.online === false;
-    const li = document.createElement('li'); li.className = 'user-item' + (isOffline ? ' offline' : '');
-    const span = document.createElement('span'); span.className = 'user-name'; span.textContent = u.name;
+    const isMe = u.id === myId;
+    const li = document.createElement('li');
+    li.className = 'user-item' + (isOffline ? ' offline' : '') + (isMe ? ' is-me' : '');
+    const span = document.createElement('span'); span.className = 'user-name';
+    span.textContent = u.name + (isMe ? ' (você)' : '');
     if (isOffline) { const ob = document.createElement('span'); ob.className = 'user-offline-badge'; ob.textContent = 'offline'; span.appendChild(ob); }
     if (u.muted) { const mb = document.createElement('span'); mb.className = 'user-muted'; mb.textContent = '🔇'; span.appendChild(mb); }
     if (S._typingTimers.has(u.id)) { const t = document.createElement('span'); t.className = 'user-typing'; t.textContent = '✏️'; span.appendChild(t); }
     li.appendChild(span);
+
+    /* Botão de renomear SEMPRE visível na própria linha */
+    if (isMe) {
+      const rb = document.createElement('button');
+      rb.className = 'mod-btn rename always';
+      rb.title = 'Mudar meu nome';
+      rb.textContent = '✏️';
+      rb.onclick = (e) => { e.stopPropagation(); openRenameModal(); };
+      li.appendChild(rb);
+    }
+
     if (u.role === 'operator') { const r = document.createElement('span'); r.className = 'user-role role-op'; r.textContent = 'op'; li.appendChild(r); }
     else if (u.role === 'admin') { const r = document.createElement('span'); r.className = 'user-role role-admin'; r.textContent = 'adm'; li.appendChild(r); }
-    const canModThis = u.id !== S.peer.id && u.role !== 'operator';
+
+    const canModThis = u.id !== myId && u.role !== 'operator';
     if (canModThis) {
       const isAdmin = u.role === 'admin'; const allowed = isOperator() || !isAdmin;
       if (allowed && canKick) { const kb = document.createElement('button'); kb.className = 'mod-btn kick'; kb.title = 'Expulsar'; kb.textContent = '✕'; kb.onclick = () => kickUser(u.id); li.appendChild(kb); }
@@ -1488,7 +1626,7 @@ function doKickUser(peerId) {
   for (const [tok, data] of [...S._resumeTokens]) if (data.deviceId === u.deviceId) S._resumeTokens.delete(tok);
   const conn = S.conns.get(peerId);
   if (conn) { try { conn.send({ type: 'kick', reason: 'Removido.' }); } catch {} setTimeout(() => { try { conn.close(); } catch {} }, 300); }
-  S.conns.delete(peerId); S.users.delete(peerId); S._rateLimit.delete(peerId); clearTyping(peerId);
+  S.conns.delete(peerId); S.users.delete(peerId); S._rateLimit.delete(peerId); S._lastRename.delete(peerId); clearTyping(peerId);
   persistRoom(); broadcastAll({ type: 'users-update', users: [...S.users.values()] });
   addSystemMessageHost(`${u.name} foi removido.`);
   renderUsers(); renderMessages();
@@ -1507,7 +1645,7 @@ function doBanUser(peerId, reason) {
   for (const [tok, data] of [...S._resumeTokens]) if (data.deviceId === u.deviceId) S._resumeTokens.delete(tok);
   const conn = S.conns.get(peerId);
   if (conn) { try { conn.send({ type: 'kick', reason: 'Você foi banido: ' + (reason || '—') }); } catch {} setTimeout(() => { try { conn.close(); } catch {} }, 300); }
-  S.conns.delete(peerId); S.users.delete(peerId); S._rateLimit.delete(peerId); clearTyping(peerId);
+  S.conns.delete(peerId); S.users.delete(peerId); S._rateLimit.delete(peerId); S._lastRename.delete(peerId); clearTyping(peerId);
   persistRoom(); broadcastAll({ type: 'users-update', users: [...S.users.values()] });
   addSystemMessageHost(`${u.name} foi banido.`);
   renderUsers();
@@ -1679,6 +1817,7 @@ $('sendBtn').onclick = sendMessage;
 $('messageInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
 $('messageInput').addEventListener('input', () => { const t = $('messageInput'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 120) + 'px'; notifyTyping(); });
 function sendMessage() {
+  const myName = me()?.name || S.myName;
   if (me()?.muted && !isOperator()) return;
   const ta = $('messageInput'); const text = ta.value.trim(); if (!text) return;
   const targetBotId = $('targetSelect').value;
@@ -1688,14 +1827,14 @@ function sendMessage() {
     if (!isOperator()) return;
     const bot = findBot(targetBotId); if (!bot) return;
     if (S.isHost) {
-      const botMsg = { id: uuid(), type: 'bot', fromName: bot.name, botId: bot.id, botEmoji: bot.emoji, botColor: bot.color, text, ts: Date.now(), spokenBy: S.myName };
+      const botMsg = { id: uuid(), type: 'bot', fromName: bot.name, botId: bot.id, botEmoji: bot.emoji, botColor: bot.color, text, ts: Date.now(), spokenBy: myName };
       addMessageLocal(botMsg); broadcastAll({ type: 'chat', msg: botMsg }); beep(1046, 0.05, 0.03);
     } else { const c = S.conns.get('host'); if (c?.open) c.send({ type: 'speak-as-bot', botId: targetBotId, text }); }
     $('messageInput').focus(); return;
   }
   if (S.isHost) {
     if (targetBotId) { const bot = findBot(targetBotId); if (!bot) return; hostHandleRelayRequest(S.peer.id, { botId: targetBotId, text }); }
-    else { const msg = { id: uuid(), type: 'user', fromId: S.peer.id, fromName: S.myName, text, ts: Date.now() }; addMessageLocal(msg); broadcastAll({ type: 'chat', msg }); }
+    else { const msg = { id: uuid(), type: 'user', fromId: S.peer.id, fromName: myName, text, ts: Date.now() }; addMessageLocal(msg); broadcastAll({ type: 'chat', msg }); }
   } else {
     const c = S.conns.get('host'); if (!c?.open) return;
     if (targetBotId) c.send({ type: 'relay-request', botId: targetBotId, text });
@@ -1757,17 +1896,8 @@ function renderBotsList() {
     const avatarContent = bot.avatar ? `<img src="${escapeHtml(bot.avatar)}" style="object-position: ${focus}" alt="">` : `<span>${escapeHtml(bot.emoji)}</span>`;
     const modelOptions = AI_MODELS.map(m => `<option value="${m.value}" ${bot.model === m.value ? 'selected' : ''}>${m.label}</option>`).join('');
 
-    /* Templates de campos com IDs únicos para o contador */
-    const descId = `desc-${bot.id}`;
-    const persId = `pers-${bot.id}`;
-    const scenId = `scen-${bot.id}`;
-    const exemId = `exem-${bot.id}`;
-    const greetId = `greet-${bot.id}`;
-    const descCountId = `descCount-${bot.id}`;
-    const persCountId = `persCount-${bot.id}`;
-    const scenCountId = `scenCount-${bot.id}`;
-    const exemCountId = `exemCount-${bot.id}`;
-    const greetCountId = `greetCount-${bot.id}`;
+    const descId = `desc-${bot.id}`, persId = `pers-${bot.id}`, scenId = `scen-${bot.id}`, exemId = `exem-${bot.id}`, greetId = `greet-${bot.id}`;
+    const descCountId = `descCount-${bot.id}`, persCountId = `persCount-${bot.id}`, scenCountId = `scenCount-${bot.id}`, exemCountId = `exemCount-${bot.id}`, greetCountId = `greetCount-${bot.id}`;
 
     row.innerHTML = `
       <div class="bot-config-header">
@@ -1795,23 +1925,23 @@ function renderBotsList() {
           <div class="char-count" id="${descCountId}"></div>
         </div>
         <div class="full">
-          <label>💭 Personalidade <span style="font-size:10px; color:#666">(quem ele é, como fala, manias)</span></label>
-          <textarea id="${persId}" class="bot-personality-input" rows="6" placeholder="Ex: Sou uma elfa arqueira de 300 anos. Falo de forma direta e um pouco sarcástica..." ${editable ? '' : 'disabled'}>${escapeHtml(bot.personality || '')}</textarea>
+          <label>💭 Personalidade</label>
+          <textarea id="${persId}" class="bot-personality-input" rows="6" placeholder="Ex: Sou uma elfa arqueira de 300 anos..." ${editable ? '' : 'disabled'}>${escapeHtml(bot.personality || '')}</textarea>
           <div class="char-count" id="${persCountId}"></div>
         </div>
         <div class="full">
-          <label>🌍 Cenário / Mundo <span style="font-size:10px; color:#666">(onde a história acontece)</span></label>
-          <textarea id="${scenId}" class="bot-scenario-input" rows="4" placeholder="Ex: Floresta de Eldoria, anoitecer..." ${editable ? '' : 'disabled'}>${escapeHtml(bot.scenario || '')}</textarea>
+          <label>🌍 Cenário / Mundo</label>
+          <textarea id="${scenId}" class="bot-scenario-input" rows="4" placeholder="Ex: Floresta de Eldoria..." ${editable ? '' : 'disabled'}>${escapeHtml(bot.scenario || '')}</textarea>
           <div class="char-count" id="${scenCountId}"></div>
         </div>
         <div class="full">
-          <label>💬 Exemplos de diálogo <span style="font-size:10px; color:#666">(ajuda muito o estilo)</span></label>
-          <textarea id="${exemId}" class="bot-examples-input" rows="4" placeholder="Ex:&#10;Jogador: Me ajuda?&#10;Bot: *encosta na árvore* Depende do que oferece." ${editable ? '' : 'disabled'}>${escapeHtml(bot.examples || '')}</textarea>
+          <label>💬 Exemplos de diálogo</label>
+          <textarea id="${exemId}" class="bot-examples-input" rows="4" ${editable ? '' : 'disabled'}>${escapeHtml(bot.examples || '')}</textarea>
           <div class="char-count" id="${exemCountId}"></div>
         </div>
         <div class="full">
           <label>Greeting / dica inicial</label>
-          <input type="text" id="${greetId}" class="bot-greet-input" value="${escapeHtml(bot.greeting || '')}" placeholder="Mostrado no placeholder do chat" ${editable ? '' : 'disabled'}>
+          <input type="text" id="${greetId}" class="bot-greet-input" value="${escapeHtml(bot.greeting || '')}" ${editable ? '' : 'disabled'}>
           <div class="char-count" id="${greetCountId}"></div>
         </div>
         <div><label>Modelo</label><select class="bot-model-input" ${editable ? '' : 'disabled'}>${modelOptions}</select></div>
@@ -1838,72 +1968,24 @@ function renderBotsList() {
       row.querySelector('.bot-emoji-input').onchange = (e) => updateBot(bot.id, { emoji: e.target.value.trim() || '🤖' });
       row.querySelector('.bot-color-input').onchange = (e) => updateBot(bot.id, { color: e.target.value });
 
-      /* Descrição: limite 500 */
-      const descEl = row.querySelector(`#${descId}`);
-      const descCnt = row.querySelector(`#${descCountId}`);
-      descEl.onchange = (e) => {
-        const v = e.target.value;
-        if (v.length > BOT_FIELD_LIMITS.description) {
-          e.target.value = v.slice(0, BOT_FIELD_LIMITS.description);
-          descEl.dispatchEvent(new Event('input'));
-        }
-        updateBot(bot.id, { description: e.target.value.trim() });
-      };
+      const descEl = row.querySelector(`#${descId}`); const descCnt = row.querySelector(`#${descCountId}`);
+      descEl.onchange = (e) => { let v = e.target.value; if (v.length > BOT_FIELD_LIMITS.description) { e.target.value = v.slice(0, BOT_FIELD_LIMITS.description); descEl.dispatchEvent(new Event('input')); } updateBot(bot.id, { description: e.target.value.trim() }); };
       bindCharCounter(descEl, BOT_FIELD_LIMITS.description, descCnt);
 
-      /* Personalidade: limite 15000 */
-      const persEl = row.querySelector(`#${persId}`);
-      const persCnt = row.querySelector(`#${persCountId}`);
-      persEl.onchange = (e) => {
-        let v = e.target.value;
-        if (v.length > BOT_FIELD_LIMITS.personality) {
-          alert(`Personalidade passou do limite de ${BOT_FIELD_LIMITS.personality.toLocaleString('pt-BR')} caracteres.\n\nSeu texto tem ${v.length.toLocaleString('pt-BR')} — vai ser cortado nos últimos ${(v.length - BOT_FIELD_LIMITS.personality).toLocaleString('pt-BR')}.`);
-          e.target.value = v.slice(0, BOT_FIELD_LIMITS.personality);
-        }
-        updateBot(bot.id, { personality: e.target.value });
-      };
-      bindAutoResize(persEl);
-      bindCharCounter(persEl, BOT_FIELD_LIMITS.personality, persCnt);
+      const persEl = row.querySelector(`#${persId}`); const persCnt = row.querySelector(`#${persCountId}`);
+      persEl.onchange = (e) => { let v = e.target.value; if (v.length > BOT_FIELD_LIMITS.personality) { alert(`Passou de ${BOT_FIELD_LIMITS.personality.toLocaleString('pt-BR')}. Vai ser cortado.`); e.target.value = v.slice(0, BOT_FIELD_LIMITS.personality); } updateBot(bot.id, { personality: e.target.value }); };
+      bindAutoResize(persEl); bindCharCounter(persEl, BOT_FIELD_LIMITS.personality, persCnt);
 
-      /* Cenário: limite 15000 */
-      const scenEl = row.querySelector(`#${scenId}`);
-      const scenCnt = row.querySelector(`#${scenCountId}`);
-      scenEl.onchange = (e) => {
-        let v = e.target.value;
-        if (v.length > BOT_FIELD_LIMITS.scenario) {
-          alert(`Cenário passou do limite de ${BOT_FIELD_LIMITS.scenario.toLocaleString('pt-BR')} caracteres.\n\nVai ser cortado.`);
-          e.target.value = v.slice(0, BOT_FIELD_LIMITS.scenario);
-        }
-        updateBot(bot.id, { scenario: e.target.value });
-      };
-      bindAutoResize(scenEl);
-      bindCharCounter(scenEl, BOT_FIELD_LIMITS.scenario, scenCnt);
+      const scenEl = row.querySelector(`#${scenId}`); const scenCnt = row.querySelector(`#${scenCountId}`);
+      scenEl.onchange = (e) => { let v = e.target.value; if (v.length > BOT_FIELD_LIMITS.scenario) { alert(`Passou de ${BOT_FIELD_LIMITS.scenario.toLocaleString('pt-BR')}. Vai ser cortado.`); e.target.value = v.slice(0, BOT_FIELD_LIMITS.scenario); } updateBot(bot.id, { scenario: e.target.value }); };
+      bindAutoResize(scenEl); bindCharCounter(scenEl, BOT_FIELD_LIMITS.scenario, scenCnt);
 
-      /* Exemplos: limite 20000 */
-      const exemEl = row.querySelector(`#${exemId}`);
-      const exemCnt = row.querySelector(`#${exemCountId}`);
-      exemEl.onchange = (e) => {
-        let v = e.target.value;
-        if (v.length > BOT_FIELD_LIMITS.examples) {
-          alert(`Exemplos passaram do limite de ${BOT_FIELD_LIMITS.examples.toLocaleString('pt-BR')} caracteres.\n\nVai ser cortado.`);
-          e.target.value = v.slice(0, BOT_FIELD_LIMITS.examples);
-        }
-        updateBot(bot.id, { examples: e.target.value });
-      };
-      bindAutoResize(exemEl);
-      bindCharCounter(exemEl, BOT_FIELD_LIMITS.examples, exemCnt);
+      const exemEl = row.querySelector(`#${exemId}`); const exemCnt = row.querySelector(`#${exemCountId}`);
+      exemEl.onchange = (e) => { let v = e.target.value; if (v.length > BOT_FIELD_LIMITS.examples) { alert(`Passou de ${BOT_FIELD_LIMITS.examples.toLocaleString('pt-BR')}. Vai ser cortado.`); e.target.value = v.slice(0, BOT_FIELD_LIMITS.examples); } updateBot(bot.id, { examples: e.target.value }); };
+      bindAutoResize(exemEl); bindCharCounter(exemEl, BOT_FIELD_LIMITS.examples, exemCnt);
 
-      /* Greeting: limite 500 */
-      const greetEl = row.querySelector(`#${greetId}`);
-      const greetCnt = row.querySelector(`#${greetCountId}`);
-      greetEl.onchange = (e) => {
-        let v = e.target.value;
-        if (v.length > BOT_FIELD_LIMITS.greeting) {
-          e.target.value = v.slice(0, BOT_FIELD_LIMITS.greeting);
-          greetEl.dispatchEvent(new Event('input'));
-        }
-        updateBot(bot.id, { greeting: e.target.value.trim() });
-      };
+      const greetEl = row.querySelector(`#${greetId}`); const greetCnt = row.querySelector(`#${greetCountId}`);
+      greetEl.onchange = (e) => { let v = e.target.value; if (v.length > BOT_FIELD_LIMITS.greeting) { e.target.value = v.slice(0, BOT_FIELD_LIMITS.greeting); greetEl.dispatchEvent(new Event('input')); } updateBot(bot.id, { greeting: e.target.value.trim() }); };
       bindCharCounter(greetEl, BOT_FIELD_LIMITS.greeting, greetCnt);
 
       row.querySelector('.bot-model-input').onchange = (e) => updateBot(bot.id, { model: e.target.value });
@@ -1933,14 +2015,10 @@ function renderBotsList() {
       const repositionBtn = row.querySelector('.reposition-btn');
       if (repositionBtn) repositionBtn.onclick = () => openCropModal(bot.id, bot.avatarFull || bot.avatar);
     } else {
-      /* Não-editável: ainda mostra contadores nos campos */
       bindCharCounter(row.querySelector(`#${descId}`), BOT_FIELD_LIMITS.description, row.querySelector(`#${descCountId}`));
-      bindAutoResize(row.querySelector(`#${persId}`));
-      bindCharCounter(row.querySelector(`#${persId}`), BOT_FIELD_LIMITS.personality, row.querySelector(`#${persCountId}`));
-      bindAutoResize(row.querySelector(`#${scenId}`));
-      bindCharCounter(row.querySelector(`#${scenId}`), BOT_FIELD_LIMITS.scenario, row.querySelector(`#${scenCountId}`));
-      bindAutoResize(row.querySelector(`#${exemId}`));
-      bindCharCounter(row.querySelector(`#${exemId}`), BOT_FIELD_LIMITS.examples, row.querySelector(`#${exemCountId}`));
+      bindAutoResize(row.querySelector(`#${persId}`)); bindCharCounter(row.querySelector(`#${persId}`), BOT_FIELD_LIMITS.personality, row.querySelector(`#${persCountId}`));
+      bindAutoResize(row.querySelector(`#${scenId}`)); bindCharCounter(row.querySelector(`#${scenId}`), BOT_FIELD_LIMITS.scenario, row.querySelector(`#${scenCountId}`));
+      bindAutoResize(row.querySelector(`#${exemId}`)); bindCharCounter(row.querySelector(`#${exemId}`), BOT_FIELD_LIMITS.examples, row.querySelector(`#${exemCountId}`));
       bindCharCounter(row.querySelector(`#${greetId}`), BOT_FIELD_LIMITS.greeting, row.querySelector(`#${greetCountId}`));
     }
 
@@ -2013,22 +2091,18 @@ function renderAdminUsersList() {
   }
   if (!c.children.length) c.innerHTML = '<p class="empty">Nenhum outro participante.</p>';
 }
-function doPromote(targetId, perms) { const u = S.users.get(targetId); if (!u || u.role === 'operator') return; u.role = 'admin'; u.perms = { ...(perms || {}) }; S._adminNames.set(u.name.toLowerCase(), u.perms); for (const [tok, data] of S._resumeTokens) if (data.deviceId === u.deviceId) { data.role = 'admin'; data.perms = u.perms; } persistRoom(); broadcastAll({ type: 'users-update', users: [...S.users.values()] }); broadcastInviteToken(); renderUsers(); if (!isEditingBotField()) renderSettingsModal(); }
+function doPromote(targetId, perms) { const u = S.users.get(targetId); if (!u || u.role === 'operator') return; const wasAdmin = u.role === 'admin'; const oldPerms = u.perms || {}; u.role = 'admin'; u.perms = { ...(perms || {}) }; S._adminNames.set(u.name.toLowerCase(), u.perms); for (const [tok, data] of S._resumeTokens) if (data.deviceId === u.deviceId) { data.role = 'admin'; data.perms = u.perms; } persistRoom(); broadcastAll({ type: 'users-update', users: [...S.users.values()] }); broadcastInviteToken(); renderUsers(); if (!isEditingBotField()) renderSettingsModal(); }
 function doDemote(targetId) { const u = S.users.get(targetId); if (!u || u.role === 'operator') return; S._adminNames.delete(u.name.toLowerCase()); u.role = 'user'; u.perms = {}; for (const [tok, data] of S._resumeTokens) if (data.deviceId === u.deviceId) { data.role = 'user'; data.perms = {}; } persistRoom(); broadcastAll({ type: 'users-update', users: [...S.users.values()] }); renderUsers(); if (!isEditingBotField()) renderSettingsModal(); }
 
 $('setRoomName').onchange = () => saveSettings({ roomName: $('setRoomName').value.trim().slice(0, 40) || 'Projeto Hermes' });
 $('setFreeChat').onchange = () => saveSettings({ allowFreeChat: $('setFreeChat').checked });
 function saveSettings(partial) { requestAction({ name: 'update-settings', partial }); }
-
 function doUpdateSettings(partial) {
   S.settings = { ...S.settings, ...(partial || {}) };
   applySettings();
   broadcastAll({ type: 'settings-update', settings: S.settings });
   persistRoom();
-  /* NOVO: não re-renderiza se o usuário estiver editando um campo de bot */
-  if ($('settingsModal').style.display !== 'none' && !isEditingBotField()) {
-    renderSettingsModal();
-  }
+  if ($('settingsModal').style.display !== 'none' && !isEditingBotField()) renderSettingsModal();
   renderQuickMentions();
 }
 
